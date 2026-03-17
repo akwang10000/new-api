@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neural Field Demo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        scrollbar-width: none;
+        background: radial-gradient(circle at center, #0a0e17 0%, #000000 82%);
+      }
+
+      body::-webkit-scrollbar {
+        display: none;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          180deg,
+          rgba(180, 255, 255, 0.028) 0,
+          rgba(180, 255, 255, 0.028) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+        mix-blend-mode: screen;
+        opacity: 0.24;
+      }
+
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 18px rgba(0, 243, 255, 0.18))
+          drop-shadow(0 0 34px rgba(0, 243, 255, 0.08));
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="field"></canvas>
+    <script>
+      const canvas = document.getElementById('field');
+      const ctx = canvas.getContext('2d');
+      const particleColor = '0, 243, 255';
+      const repelRadius = 150;
+      const mouseLinkRadius = 225;
+      const particleLinkRadius = 118;
+      let width = 0;
+      let height = 0;
+      let dpr = 1;
+      let particles = [];
+
+      const mouse = {
+        x: 0,
+        y: 0,
+        active: false,
+      };
+
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+      function createParticle() {
+        const baseX = Math.random() * width;
+        const baseY = Math.random() * height;
+        return {
+          x: baseX,
+          y: baseY,
+          baseX,
+          baseY,
+          baseVX: randomInRange(-0.16, 0.16),
+          baseVY: randomInRange(-0.14, 0.14),
+          radius: randomInRange(0.5, 2.5),
+          alpha: randomInRange(0.35, 1),
+        };
+      }
+
+      function createParticles() {
+        const count = Math.max(
+          48,
+          Math.min(112, Math.floor((width * height) / 18000)),
+        );
+        particles = Array.from({ length: count }, createParticle);
+      }
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        createParticles();
+      }
+
+      function drawParticle(particle) {
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${particleColor}, ${particle.alpha})`;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = `rgba(${particleColor}, 0.72)`;
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawMouseCore() {
+        if (!mouse.active) return;
+
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${particleColor}, 0.95)`;
+        ctx.shadowBlur = 28;
+        ctx.shadowColor = `rgba(${particleColor}, 0.9)`;
+        ctx.arc(mouse.x, mouse.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(${particleColor}, 0.16)`;
+        ctx.arc(mouse.x, mouse.y, repelRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      function updateParticle(particle) {
+        particle.baseX += particle.baseVX;
+        particle.baseY += particle.baseVY;
+
+        if (particle.baseX <= 0 || particle.baseX >= width) {
+          particle.baseVX *= -1;
+          particle.baseX = Math.max(0, Math.min(width, particle.baseX));
+        }
+
+        if (particle.baseY <= 0 || particle.baseY >= height) {
+          particle.baseVY *= -1;
+          particle.baseY = Math.max(0, Math.min(height, particle.baseY));
+        }
+
+        if (mouse.active) {
+          const dx = particle.x - mouse.x;
+          const dy = particle.y - mouse.y;
+          const distance = Math.hypot(dx, dy) || 0.001;
+
+          if (distance < repelRadius) {
+            const force = (repelRadius - distance) / repelRadius;
+            const push = force * 11;
+            particle.x += (dx / distance) * push;
+            particle.y += (dy / distance) * push;
+            return;
+          }
+        }
+
+        particle.x += (particle.baseX - particle.x) / 50;
+        particle.y += (particle.baseY - particle.y) / 50;
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, width, height);
+
+        particles.forEach(updateParticle);
+        ctx.shadowBlur = 0;
+
+        for (let i = 0; i < particles.length; i += 1) {
+          const particle = particles[i];
+
+          for (let j = i + 1; j < particles.length; j += 1) {
+            const target = particles[j];
+            const dx = particle.x - target.x;
+            const dy = particle.y - target.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance < particleLinkRadius) {
+              const opacity =
+                ((particleLinkRadius - distance) / particleLinkRadius) * 0.26;
+              ctx.beginPath();
+              ctx.lineWidth = 0.5;
+              ctx.strokeStyle = `rgba(${particleColor}, ${opacity})`;
+              ctx.moveTo(particle.x, particle.y);
+              ctx.lineTo(target.x, target.y);
+              ctx.stroke();
+            }
+          }
+
+          if (mouse.active) {
+            const dx = particle.x - mouse.x;
+            const dy = particle.y - mouse.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance < mouseLinkRadius) {
+              const opacity =
+                ((mouseLinkRadius - distance) / mouseLinkRadius) * 0.38;
+              ctx.beginPath();
+              ctx.lineWidth = 1;
+              ctx.strokeStyle = `rgba(${particleColor}, ${opacity})`;
+              ctx.moveTo(particle.x, particle.y);
+              ctx.lineTo(mouse.x, mouse.y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        particles.forEach(drawParticle);
+        drawMouseCore();
+        ctx.shadowBlur = 0;
+
+        requestAnimationFrame(render);
+      }
+
+      window.addEventListener('mousemove', (event) => {
+        mouse.x = event.clientX;
+        mouse.y = event.clientY;
+        mouse.active = true;
+      });
+
+      window.addEventListener('mouseleave', () => {
+        mouse.active = false;
+      });
+
+      window.addEventListener(
+        'touchmove',
+        (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          mouse.x = touch.clientX;
+          mouse.y = touch.clientY;
+          mouse.active = true;
+        },
+        { passive: true },
+      );
+
+      window.addEventListener('touchend', () => {
+        mouse.active = false;
+      });
+
+      window.addEventListener('resize', resize);
+
+      resize();
+      render();
+    </script>
+  </body>
+</html>

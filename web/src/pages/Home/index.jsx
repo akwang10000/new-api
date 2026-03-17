@@ -17,83 +17,163 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useContext, useEffect, useState } from 'react';
-import {
-  Button,
-  Typography,
-  Input,
-  ScrollList,
-  ScrollItem,
-} from '@douyinfe/semi-ui';
-import { API, showError, copy, showSuccess } from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile';
-import { API_ENDPOINTS } from '../../constants/common.constant';
-import { StatusContext } from '../../context/Status';
-import { useActualTheme } from '../../context/Theme';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Avatar, Button, Typography } from '@douyinfe/semi-ui';
+import { IconCopy, IconFile, IconPlay } from '@douyinfe/semi-icons';
+import { Link, useLocation } from 'react-router-dom';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import {
-  IconGithubLogo,
-  IconPlay,
-  IconFile,
-  IconCopy,
-} from '@douyinfe/semi-icons';
-import { Link } from 'react-router-dom';
+  API,
+  copy,
+  getLogo,
+  getSystemName,
+  showError,
+  showSuccess,
+  stringToColor,
+} from '../../helpers';
+import { API_ENDPOINTS } from '../../constants/common.constant';
+import { StatusContext } from '../../context/Status';
+import { UserContext } from '../../context/User';
+import { useActualTheme } from '../../context/Theme';
+import { useIsMobile } from '../../hooks/common/useIsMobile';
+import { useNavigation } from '../../hooks/common/useNavigation';
 import NoticeModal from '../../components/layout/NoticeModal';
 import {
-  Moonshot,
   OpenAI,
-  XAI,
-  Zhipu,
-  Volcengine,
-  Cohere,
   Claude,
   Gemini,
-  Suno,
-  Minimax,
-  Wenxin,
-  Spark,
-  Qingyan,
   DeepSeek,
   Qwen,
-  Midjourney,
   Grok,
+  Midjourney,
   AzureAI,
-  Hunyuan,
-  Xinference,
 } from '@lobehub/icons';
+import NeuronField from './NeuronField';
+import './home.css';
 
 const { Text } = Typography;
 
+const PROVIDERS = [
+  {
+    name: 'OpenAI',
+    renderIcon: () => <OpenAI size={28} />,
+  },
+  {
+    name: 'Claude',
+    renderIcon: () => <Claude.Color size={28} />,
+  },
+  {
+    name: 'Gemini',
+    renderIcon: () => <Gemini.Color size={28} />,
+  },
+  {
+    name: 'DeepSeek',
+    renderIcon: () => <DeepSeek.Color size={28} />,
+  },
+  {
+    name: 'Qwen',
+    renderIcon: () => <Qwen.Color size={28} />,
+  },
+  {
+    name: 'Grok',
+    renderIcon: () => <Grok size={28} />,
+  },
+  {
+    name: 'Midjourney',
+    renderIcon: () => <Midjourney size={28} />,
+  },
+  {
+    name: 'Azure AI',
+    renderIcon: () => <AzureAI.Color size={28} />,
+  },
+];
+
 const Home = () => {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const [userState] = useContext(UserContext);
   const [statusState] = useContext(StatusContext);
   const actualTheme = useActualTheme();
+  const isMobile = useIsMobile();
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
-  const isMobile = useIsMobile();
-  const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
+  const [endpointIndex, setEndpointIndex] = useState(0);
+
+  const logo = getLogo();
+  const systemName = getSystemName();
   const docsLink = statusState?.status?.docs_link || '';
   const serverAddress =
     statusState?.status?.server_address || `${window.location.origin}`;
-  const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
-  const [endpointIndex, setEndpointIndex] = useState(0);
-  const isChinese = i18n.language.startsWith('zh');
+  const isSelfUseMode = statusState?.status?.self_use_mode_enabled || false;
+
+  const headerNavModules = useMemo(() => {
+    const rawModules = statusState?.status?.HeaderNavModules;
+    if (!rawModules) {
+      return null;
+    }
+
+    try {
+      const parsedModules = JSON.parse(rawModules);
+      if (typeof parsedModules.pricing === 'boolean') {
+        parsedModules.pricing = {
+          enabled: parsedModules.pricing,
+          requireAuth: false,
+        };
+      }
+      return parsedModules;
+    } catch (error) {
+      console.error('Failed to parse header modules:', error);
+      return null;
+    }
+  }, [statusState?.status?.HeaderNavModules]);
+
+  const pricingRequireAuth = useMemo(() => {
+    if (!headerNavModules?.pricing) {
+      return false;
+    }
+    return typeof headerNavModules.pricing === 'object'
+      ? headerNavModules.pricing.requireAuth
+      : false;
+  }, [headerNavModules]);
+
+  const { mainNavLinks } = useNavigation(t, docsLink, headerNavModules);
+
+  const endpointPath = API_ENDPOINTS[endpointIndex] || API_ENDPOINTS[0];
+  const normalizedServerAddress = serverAddress.endsWith('/')
+    ? serverAddress.slice(0, -1)
+    : serverAddress;
+  const fullEndpoint = `${normalizedServerAddress}${endpointPath}`;
+  const consoleTarget = userState?.user ? '/console' : '/login';
+  const pricingTarget =
+    pricingRequireAuth && !userState?.user ? '/login' : '/pricing';
+  const profileSubtitle =
+    userState?.user?.role >= 10 ? t('管理员') : t('控制台');
+  const currentYear = new Date().getFullYear();
+  const showLandingPage = homePageContentLoaded && homePageContent === '';
 
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');
-    const res = await API.get('/api/home_page_content');
-    const { success, message, data } = res.data;
-    if (success) {
+
+    try {
+      const res = await API.get('/api/home_page_content');
+      const { success, message, data } = res.data;
+
+      if (!success) {
+        showError(message);
+        setHomePageContent(t('加载首页内容失败...'));
+        return;
+      }
+
       let content = data;
       if (!data.startsWith('https://')) {
         content = marked.parse(data);
       }
+
       setHomePageContent(content);
       localStorage.setItem('home_page_content', content);
 
-      // 如果内容是 URL，则发送主题模式
       if (data.startsWith('https://')) {
         const iframe = document.querySelector('iframe');
         if (iframe) {
@@ -103,15 +183,16 @@ const Home = () => {
           };
         }
       }
-    } else {
-      showError(message);
-      setHomePageContent('加载首页内容失败...');
+    } catch (error) {
+      console.error('Failed to load home page content:', error);
+      setHomePageContent(t('加载首页内容失败...'));
+    } finally {
+      setHomePageContentLoaded(true);
     }
-    setHomePageContentLoaded(true);
   };
 
-  const handleCopyBaseURL = async () => {
-    const ok = await copy(serverAddress);
+  const handleCopyEndpoint = async () => {
+    const ok = await copy(fullEndpoint);
     if (ok) {
       showSuccess(t('已复制到剪切板'));
     }
@@ -121,16 +202,18 @@ const Home = () => {
     const checkNoticeAndShow = async () => {
       const lastCloseDate = localStorage.getItem('notice_close_date');
       const today = new Date().toDateString();
-      if (lastCloseDate !== today) {
-        try {
-          const res = await API.get('/api/notice');
-          const { success, data } = res.data;
-          if (success && data && data.trim() !== '') {
-            setNoticeVisible(true);
-          }
-        } catch (error) {
-          console.error('获取公告失败:', error);
+      if (lastCloseDate === today) {
+        return;
+      }
+
+      try {
+        const res = await API.get('/api/notice');
+        const { success, data } = res.data;
+        if (success && data && data.trim() !== '') {
+          setNoticeVisible(true);
         }
+      } catch (error) {
+        console.error('Failed to load notice:', error);
       }
     };
 
@@ -143,10 +226,142 @@ const Home = () => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setEndpointIndex((prev) => (prev + 1) % endpointItems.length);
-    }, 3000);
+      setEndpointIndex((prev) => (prev + 1) % API_ENDPOINTS.length);
+    }, 2800);
     return () => clearInterval(timer);
-  }, [endpointItems.length]);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('home-landing-body', showLandingPage);
+    document.documentElement.classList.toggle(
+      'home-landing-html',
+      showLandingPage,
+    );
+
+    return () => {
+      document.body.classList.remove('home-landing-body');
+      document.documentElement.classList.remove('home-landing-html');
+    };
+  }, [showLandingPage]);
+
+  const renderHeaderLink = (link) => {
+    const isHomeLink =
+      link.itemKey === 'home' && location.pathname === '/' && !link.isExternal;
+
+    const className = `home-landing__nav-link${isHomeLink ? ' is-active' : ''}`;
+
+    if (link.isExternal) {
+      return (
+        <a
+          key={link.itemKey}
+          href={link.externalLink}
+          target='_blank'
+          rel='noreferrer'
+          className={className}
+        >
+          {link.text}
+        </a>
+      );
+    }
+
+    let targetPath = link.to;
+    if (link.itemKey === 'console' && !userState?.user) {
+      targetPath = '/login';
+    }
+    if (link.itemKey === 'pricing' && pricingRequireAuth && !userState?.user) {
+      targetPath = '/login';
+    }
+
+    return (
+      <Link key={link.itemKey} to={targetPath} className={className}>
+        {link.text}
+      </Link>
+    );
+  };
+
+  const renderTopActions = () => {
+    if (userState?.user) {
+      return (
+        <Link to='/console/personal' className='home-landing__profile'>
+          <Avatar
+            size='small'
+            color={stringToColor(userState.user.username || 'U')}
+          >
+            {(userState.user.username || 'U')[0].toUpperCase()}
+          </Avatar>
+          <div className='home-landing__profile-meta'>
+            <span className='home-landing__profile-name'>
+              {userState.user.username}
+            </span>
+            <span className='home-landing__profile-role'>
+              {profileSubtitle}
+            </span>
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <div className='home-landing__auth-actions'>
+        <Link to='/login'>
+          <Button
+            theme='borderless'
+            className='home-landing__ghost-button home-landing__header-button'
+          >
+            {t('登录')}
+          </Button>
+        </Link>
+        {!isSelfUseMode && (
+          <Link to='/register'>
+            <Button
+              theme='solid'
+              type='primary'
+              className='home-landing__header-button home-landing__gradient-button'
+            >
+              {t('注册')}
+            </Button>
+          </Link>
+        )}
+      </div>
+    );
+  };
+
+  const renderSecondaryAction = () => {
+    const hasDocsNav = mainNavLinks.some((link) => link.itemKey === 'docs');
+    const hasPricingNav = mainNavLinks.some(
+      (link) => link.itemKey === 'pricing',
+    );
+
+    if (docsLink && hasDocsNav) {
+      return (
+        <a href={docsLink} target='_blank' rel='noreferrer'>
+          <Button
+            icon={<IconFile />}
+            className='home-landing__secondary-action'
+            size={isMobile ? 'default' : 'large'}
+          >
+            {t('开发者文档')}
+          </Button>
+        </a>
+      );
+    }
+
+    if (!hasPricingNav) {
+      return null;
+    }
+
+    return (
+      <Link to={pricingTarget}>
+        <Button
+          icon={<IconFile />}
+          className='home-landing__secondary-action'
+          size={isMobile ? 'default' : 'large'}
+        >
+          {t('模型广场')}
+        </Button>
+      </Link>
+    );
+  };
 
   return (
     <div className='w-full overflow-x-hidden'>
@@ -155,184 +370,108 @@ const Home = () => {
         onClose={() => setNoticeVisible(false)}
         isMobile={isMobile}
       />
-      {homePageContentLoaded && homePageContent === '' ? (
-        <div className='w-full overflow-x-hidden'>
-          {/* Banner 部分 */}
-          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
-            {/* 背景模糊晕染球 */}
-            <div className='blur-ball blur-ball-indigo' />
-            <div className='blur-ball blur-ball-teal' />
-            <div className='flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32 mt-10'>
-              {/* 居中内容区 */}
-              <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
-                <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
-                  <h1
-                    className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-semi-color-text-0 leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
-                  >
-                    <>
-                      {t('统一的')}
-                      <br />
-                      <span className='shine-text'>{t('大模型接口网关')}</span>
-                    </>
-                  </h1>
-                  <p className='text-base md:text-lg lg:text-xl text-semi-color-text-1 mt-4 md:mt-6 max-w-xl'>
-                    {t('更好的价格，更好的稳定性，只需要将模型基址替换为：')}
-                  </p>
-                  {/* BASE URL 与端点选择 */}
-                  <div className='flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md'>
-                    <Input
-                      readonly
-                      value={serverAddress}
-                      className='flex-1 !rounded-full'
-                      size={isMobile ? 'default' : 'large'}
-                      suffix={
-                        <div className='flex items-center gap-2'>
-                          <ScrollList
-                            bodyHeight={32}
-                            style={{ border: 'unset', boxShadow: 'unset' }}
-                          >
-                            <ScrollItem
-                              mode='wheel'
-                              cycled={true}
-                              list={endpointItems}
-                              selectedIndex={endpointIndex}
-                              onSelect={({ index }) => setEndpointIndex(index)}
-                            />
-                          </ScrollList>
-                          <Button
-                            type='primary'
-                            onClick={handleCopyBaseURL}
-                            icon={<IconCopy />}
-                            className='!rounded-full'
-                          />
-                        </div>
-                      }
-                    />
-                  </div>
-                </div>
 
-                {/* 操作按钮 */}
-                <div className='flex flex-row gap-4 justify-center items-center'>
-                  <Link to='/console'>
-                    <Button
-                      theme='solid'
-                      type='primary'
-                      size={isMobile ? 'default' : 'large'}
-                      className='!rounded-3xl px-8 py-2'
-                      icon={<IconPlay />}
-                    >
-                      {t('获取密钥')}
-                    </Button>
-                  </Link>
-                  {isDemoSiteMode && statusState?.status?.version ? (
-                    <Button
-                      size={isMobile ? 'default' : 'large'}
-                      className='flex items-center !rounded-3xl px-6 py-2'
-                      icon={<IconGithubLogo />}
-                      onClick={() =>
-                        window.open(
-                          'https://github.com/QuantumNous/new-api',
-                          '_blank',
-                        )
-                      }
-                    >
-                      {statusState.status.version}
-                    </Button>
-                  ) : (
-                    docsLink && (
-                      <Button
-                        size={isMobile ? 'default' : 'large'}
-                        className='flex items-center !rounded-3xl px-6 py-2'
-                        icon={<IconFile />}
-                        onClick={() => window.open(docsLink, '_blank')}
-                      >
-                        {t('文档')}
-                      </Button>
-                    )
-                  )}
-                </div>
+      {showLandingPage ? (
+        <div className='home-landing'>
+          <NeuronField />
+          <div className='home-landing__grid' />
+          <div className='home-landing__glow home-landing__glow--top' />
+          <div className='home-landing__glow home-landing__glow--center' />
 
-                {/* 框架兼容性图标 */}
-                <div className='mt-12 md:mt-16 lg:mt-20 w-full'>
-                  <div className='flex items-center mb-6 md:mb-8 justify-center'>
-                    <Text
-                      type='tertiary'
-                      className='text-lg md:text-xl lg:text-2xl font-light'
-                    >
-                      {t('支持众多的大模型供应商')}
-                    </Text>
-                  </div>
-                  <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-4'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Moonshot size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <OpenAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <XAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Zhipu.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Volcengine.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Cohere.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Claude.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Gemini.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Suno size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Minimax.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Wenxin.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Spark.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qingyan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <DeepSeek.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qwen.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Midjourney size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Grok size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <AzureAI.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Hunyuan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Xinference.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Typography.Text className='!text-lg sm:!text-xl md:!text-2xl lg:!text-3xl font-bold'>
-                        30+
-                      </Typography.Text>
-                    </div>
-                  </div>
-                </div>
+          <header className='home-landing__header'>
+            <div className='home-landing__header-inner'>
+              <Link to='/' className='home-landing__brand'>
+                <img
+                  src={logo}
+                  alt={systemName}
+                  className='home-landing__brand-logo'
+                />
+                <span className='home-landing__brand-name'>{systemName}</span>
+              </Link>
+
+              <nav className='home-landing__nav'>
+                {mainNavLinks.map(renderHeaderLink)}
+              </nav>
+
+              <div className='home-landing__header-actions'>
+                {renderTopActions()}
               </div>
             </div>
-          </div>
+          </header>
+
+          <main className='home-landing__hero'>
+            <div className='home-landing__badge'>
+              {t('企业级高可用模型分发网络')}
+            </div>
+
+            <h1 className='home-landing__title'>
+              <span>{t('统一的')}</span>
+              <span className='home-landing__title-gradient'>
+                {t('大模型接口网关')}
+              </span>
+            </h1>
+
+            <Text className='home-landing__description'>
+              {t(
+                '聚合主流模型供应商，提供极速、稳定且高性价比的 API 中转服务。只需替换 Base URL，即可无缝接入全球顶级 AI 能力。',
+              )}
+            </Text>
+
+            <div className='home-landing__endpoint-panel'>
+              <div className='home-landing__endpoint-prefix'>HTTPS</div>
+              <code className='home-landing__endpoint-value'>
+                {fullEndpoint}
+              </code>
+              <Button
+                theme='solid'
+                type='primary'
+                icon={<IconCopy />}
+                onClick={handleCopyEndpoint}
+                className='home-landing__copy-button home-landing__gradient-button'
+                size={isMobile ? 'default' : 'large'}
+              >
+                {t('复制地址')}
+              </Button>
+            </div>
+
+            <div className='home-landing__hero-actions'>
+              <Link to={consoleTarget}>
+                <Button
+                  icon={<IconPlay />}
+                  className='home-landing__primary-action'
+                  theme='solid'
+                  type='primary'
+                  size={isMobile ? 'default' : 'large'}
+                >
+                  {t('快速控制台')}
+                </Button>
+              </Link>
+              {renderSecondaryAction()}
+            </div>
+
+            <div className='home-landing__hero-meta'>
+              <span>{t('支持众多的大模型供应商')}</span>
+              <span className='home-landing__meta-divider' />
+              <span>{t('覆盖多模态、推理、图像与音频接口')}</span>
+            </div>
+          </main>
+
+          <section className='home-landing__providers'>
+            {PROVIDERS.map((provider) => (
+              <div key={provider.name} className='home-landing__provider-card'>
+                <div className='home-landing__provider-icon'>
+                  {provider.renderIcon()}
+                </div>
+                <span className='home-landing__provider-name'>
+                  {provider.name}
+                </span>
+              </div>
+            ))}
+          </section>
+
+          <footer className='home-landing__footer'>
+            © {currentYear} {systemName}
+          </footer>
         </div>
       ) : (
         <div className='overflow-x-hidden w-full'>

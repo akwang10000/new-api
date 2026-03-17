@@ -1,0 +1,131 @@
+.docs-viewer {
+  min-height: 100vh;
+  color: #203036;
+  background: radial-gradient(
+      circle at top left,
+      rgba(217, 111, 50, 0.18),
+      transparent 26rem
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(32, 48, 54, 0.14),
+      transparent 32rem
+    ),
+    #f4efe6;
+}
+
+.docs-viewer__shell {
+  width: min(1320px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.docs-viewer__hero,
+.docs-viewer__panel {
+  border: 1px solid rgba(37, 52, 57, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 48px rgba(32, 48, 54, 0.12);
+}
+
+.docs-viewer__hero {
+  padding: 20px 24px;
+}
+
+.docs-viewer__eyebrow {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(217, 111, 50, 0.1);
+  color: #b7561f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.docs-viewer__title {
+  margin: 14px 0 10px;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.08;
+}
+
+.docs-viewer__subtitle {
+  margin: 0;
+  color: #5d6e73;
+  line-height: 1.7;
+}
+
+.docs-viewer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.docs-viewer__action-link {
+  text-decoration: none;
+}
+
+.docs-viewer__panel {
+  margin-top: 18px;
+}
+
+.docs-viewer__panel--openapi {
+  overflow: hidden;
+}
+
+.docs-viewer__panel--markdown {
+  padding: 28px;
+}
+
+.docs-viewer__loading,
+.docs-viewer__error {
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #5d6e73;
+  padding: 32px 24px;
+}
+
+.docs-viewer__loading-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.docs-viewer__markdown .markdown-body {
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.docs-viewer__markdown .markdown-body h1:first-child {
+  margin-top: 0;
+}
+
+.docs-viewer__markdown .markdown-body img {
+  max-width: 100%;
+}
+
+.docs-viewer__markdown .markdown-body pre {
+  margin: 16px 0;
+}
+
+@media (max-width: 640px) {
+  .docs-viewer__shell {
+    width: min(100% - 16px, 1320px);
+    padding-top: 16px;
+  }
+
+  .docs-viewer__hero,
+  .docs-viewer__panel {
+    border-radius: 20px;
+  }
+
+  .docs-viewer__hero,
+  .docs-viewer__panel--markdown {
+    padding: 18px;
+  }
+}

@@ -53,6 +53,8 @@ import SetupCheck from './components/layout/SetupCheck';
 const Home = lazy(() => import('./pages/Home'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
+const OpenApiViewer = lazy(() => import('./pages/Docs/OpenApiViewer'));
+const MarkdownViewer = lazy(() => import('./pages/Docs/MarkdownViewer'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 
@@ -339,6 +341,22 @@ function App() {
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <About />
+            </Suspense>
+          }
+        />
+        <Route
+          path='/docs-viewer/openapi'
+          element={
+            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+              <OpenApiViewer />
+            </Suspense>
+          }
+        />
+        <Route
+          path='/docs-viewer/markdown'
+          element={
+            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+              <MarkdownViewer />
             </Suspense>
           }
         />

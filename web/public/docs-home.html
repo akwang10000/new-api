@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/icon_rounded.png" />
+    <title>Nerve Centers Developer Docs</title>
+    <style>
+      :root {
+        --bg: #f4efe6;
+        --panel: rgba(255, 255, 255, 0.9);
+        --line: rgba(37, 52, 57, 0.12);
+        --text: #203036;
+        --muted: #5d6e73;
+        --accent: #d96f32;
+        --accent-dark: #b7561f;
+        --shadow: 0 20px 60px rgba(32, 48, 54, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        color: var(--text);
+        background: radial-gradient(
+            circle at top left,
+            rgba(217, 111, 50, 0.18),
+            transparent 26rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(32, 48, 54, 0.14),
+            transparent 32rem
+          ),
+          var(--bg);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 72px;
+      }
+
+      .hero {
+        padding: 40px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.94),
+          rgba(255, 248, 241, 0.84)
+        );
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(217, 111, 50, 0.1);
+        color: var(--accent-dark);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(36px, 6vw, 60px);
+        line-height: 1.02;
+      }
+
+      .hero p {
+        max-width: 760px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.8;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .hero-meta span {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .section {
+        margin-top: 28px;
+      }
+
+      .section h2 {
+        margin: 0 0 14px;
+        font-size: 22px;
+      }
+
+      .section p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        display: block;
+        min-height: 200px;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        transition:
+          transform 0.18s ease,
+          border-color 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(217, 111, 50, 0.35);
+        box-shadow: 0 24px 68px rgba(32, 48, 54, 0.16);
+      }
+
+      .card-tag {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(32, 48, 54, 0.08);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .card h3 {
+        margin: 0 0 10px;
+        font-size: 20px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .quick-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+        text-decoration: none;
+      }
+
+      .footer-note {
+        margin-top: 28px;
+        padding: 18px 20px;
+        border-left: 4px solid var(--accent);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(32, 48, 54, 0.08);
+        font-family: Consolas, 'Courier New', monospace;
+        font-size: 0.95em;
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 20px, 1120px);
+          padding: 20px 0 48px;
+        }
+
+        .hero {
+          padding: 24px;
+          border-radius: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="eyebrow">Nerve Centers Docs</span>
+        <h1>Nerve Centers Developer Documentation</h1>
+        <p>
+          This page collects the main local documentation resources for API
+          access, deployment, relay behavior, and channel configuration. Use it
+          as the first stop for integration, testing, and day-to-day operations.
+        </p>
+        <div class="hero-meta">
+          <span>Unified API Access</span>
+          <span>Local Static Docs</span>
+          <span>OpenAPI Specs</span>
+          <span>Deployment Notes</span>
+        </div>
+      </section>
+
+      <section class="section" id="getting-started">
+        <h2>Quick Start</h2>
+        <p>
+          Start from these entry points if you need working references
+          immediately.
+        </p>
+        <div class="quick-links">
+          <a
+            class="quick-link"
+            href="/docs-viewer/openapi?spec=%2Fdocs%2Fopenapi%2Fapi.json&title=API%20Documentation"
+            target="_blank"
+            rel="noreferrer"
+            >API Docs</a
+          >
+          <a
+            class="quick-link"
+            href="/docs-viewer/openapi?spec=%2Fdocs%2Fopenapi%2Frelay.json&title=Relay%20Documentation"
+            target="_blank"
+            rel="noreferrer"
+            >Relay Docs</a
+          >
+          <a
+            class="quick-link"
+            href="/docs-viewer/markdown?file=%2Fdocs%2Finstallation%2FBT.md&title=Installation%20Guide"
+            target="_blank"
+            rel="noreferrer"
+            >Installation Guide</a
+          >
+          <a
+            class="quick-link"
+            href="/docs-viewer/markdown?file=%2Fdocs%2Fchannel%2Fother_setting.md&title=Channel%20Settings"
+            target="_blank"
+            rel="noreferrer"
+            >Channel Settings</a
+          >
+          <a
+            class="quick-link"
+            href="/docs-viewer/markdown?file=%2Fdocs%2Fionet-client.md&title=Client%20Notes"
+            target="_blank"
+            rel="noreferrer"
+            >Client Notes</a
+          >
+        </div>
+      </section>
+
+      <section class="section" id="guides">
+        <h2>Documentation Map</h2>
+        <p>
+          The sections below are grouped by common use cases across product,
+          engineering, QA, and operations.
+        </p>
+        <div class="grid">
+          <a
+            class="card"
+            href="/docs-viewer/openapi?spec=%2Fdocs%2Fopenapi%2Fapi.json&title=API%20Documentation"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span class="card-tag">API</span>
+            <h3>OpenAPI Definition</h3>
+            <p>
+              Import this spec into Apifox, Postman, or your internal API
+              tooling for debugging, mocks, and automated testing.
+            </p>
+          </a>
+          <a
+            class="card"
+            href="/docs-viewer/openapi?spec=%2Fdocs%2Fopenapi%2Frelay.json&title=Relay%20Documentation"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span class="card-tag">Relay</span>
+            <h3>Relay Contract</h3>
+            <p>
+              Use this file when validating proxy behavior, request formats, or
+              upstream compatibility across relay scenarios.
+            </p>
+          </a>
+          <a
+            class="card"
+            href="/docs-viewer/markdown?file=%2Fdocs%2Fchannel%2Fother_setting.md&title=Channel%20and%20Model%20Settings"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span class="card-tag">Channel</span>
+            <h3>Channel and Model Settings</h3>
+            <p>
+              Covers provider-side configuration details and helps keep channel
+              setup consistent across teams and environments.
+            </p>
+          </a>
+          <a
+            class="card"
+            href="/docs-viewer/markdown?file=%2Fdocs%2Finstallation%2FBT.md&title=Deployment%20and%20Operations"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span class="card-tag">Deploy</span>
+            <h3>Deployment and Operations</h3>
+            <p>
+              Includes installation notes, environment preparation, and
+              operational checks for rollout and maintenance.
+            </p>
+          </a>
+        </div>
+      </section>
+
+      <section class="section" id="support">
+        <h2>Local Resource Rules</h2>
+        <p>
+          This docs entry now points to local static files. When you add HTML,
+          Markdown, JSON, or images into <code>web/public/docs/</code>, they
+          become reachable from the site under <code>/docs/...</code>.
+        </p>
+        <div class="footer-note">
+          Common local paths:
+          <code>/docs-home.html</code>
+          <code>/docs/openapi/api.json</code>
+          <code>/docs/openapi/relay.json</code>
+          <code>/docs/channel/other_setting.md</code>
+          <code>/docs/installation/BT.md</code>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -68,6 +68,7 @@ const PageLayout = () => {
     !location.pathname.startsWith('/console/chat') &&
     location.pathname !== '/console/playground';
 
+  const isHomeRoute = location.pathname === '/';
   const isConsoleRoute = location.pathname.startsWith('/console');
   const showSider = isConsoleRoute && (!isMobile || drawerOpen);
 
@@ -142,6 +143,15 @@ const PageLayout = () => {
       }
     }
   }, [i18n, userState?.user?.setting]);
+
+  if (isHomeRoute) {
+    return (
+      <>
+        <App />
+        <ToastContainer />
+      </>
+    );
+  }
 
   return (
     <Layout

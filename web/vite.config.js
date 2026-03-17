@@ -29,6 +29,15 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@douyinfe/semi-ui/dist/css/semi.css': path.resolve(
+        __dirname,
+        './node_modules/@douyinfe/semi-ui/dist/css/semi.css',
+      ),
+      '@visactor/vchart': path.resolve(
+        __dirname,
+        './node_modules/@visactor/vchart/build/index.js',
+      ),
+      'lucide-react': path.resolve(__dirname, './node_modules/lucide-react'),
     },
   },
   plugins: [
@@ -57,6 +66,13 @@ export default defineConfig({
   ],
   optimizeDeps: {
     force: true,
+    include: ['hoist-non-react-statics', 'react-is'],
+    exclude: [
+      '@visactor/react-vchart',
+      '@visactor/vchart',
+      '@visactor/vchart-semi-theme',
+    ],
+    needsInterop: ['hoist-non-react-statics', 'react-is'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
