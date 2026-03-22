@@ -48,6 +48,9 @@ func SetApiRouter(router *gin.Engine) {
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", controller.CreemWebhook)
+		apiRouter.POST("/btcpay/webhook", controller.BTCPayWebhook)
+		apiRouter.POST("/bepusdt/webhook", controller.BEpusdtWebhook)
+		apiRouter.POST("/nowpayments/webhook", controller.NOWPaymentsWebhook)
 
 		// Universal secure verification routes
 		apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
@@ -89,6 +92,10 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.RequestStripePay)
 				selfRoute.POST("/stripe/amount", controller.RequestStripeAmount)
 				selfRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.RequestCreemPay)
+				selfRoute.POST("/btcpay/pay", middleware.CriticalRateLimit(), controller.RequestBTCPayPay)
+				selfRoute.POST("/bepusdt/pay", middleware.CriticalRateLimit(), controller.RequestBEpusdtPay)
+				selfRoute.POST("/nowpayments/quote", middleware.CriticalRateLimit(), controller.RequestNOWPaymentsQuote)
+				selfRoute.POST("/nowpayments/pay", middleware.CriticalRateLimit(), controller.RequestNOWPaymentsPay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
 

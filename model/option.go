@@ -85,6 +85,24 @@ func InitOptionMap() {
 	common.OptionMap["StripePriceId"] = setting.StripePriceId
 	common.OptionMap["StripeUnitPrice"] = strconv.FormatFloat(setting.StripeUnitPrice, 'f', -1, 64)
 	common.OptionMap["StripePromotionCodesEnabled"] = strconv.FormatBool(setting.StripePromotionCodesEnabled)
+	common.OptionMap["BTCPayServerURL"] = setting.BTCPayServerURL
+	common.OptionMap["BTCPayStoreID"] = setting.BTCPayStoreID
+	common.OptionMap["BTCPayApiToken"] = setting.BTCPayApiToken
+	common.OptionMap["BTCPayWebhookSecret"] = setting.BTCPayWebhookSecret
+	common.OptionMap["BTCPayEnabled"] = strconv.FormatBool(setting.BTCPayEnabled)
+	common.OptionMap["BEpusdtBaseURL"] = setting.BEpusdtBaseURL
+	common.OptionMap["BEpusdtToken"] = setting.BEpusdtToken
+	common.OptionMap["BEpusdtWebhookSecret"] = setting.BEpusdtWebhookSecret
+	common.OptionMap["BEpusdtEnabled"] = strconv.FormatBool(setting.BEpusdtEnabled)
+	common.OptionMap["BEpusdtUSDTNetworks"] = setting.BEpusdtUSDTNetworks
+	common.OptionMap["BEpusdtOrderTimeout"] = strconv.Itoa(setting.BEpusdtOrderTimeout)
+	common.OptionMap["NOWPaymentsApiKey"] = setting.NOWPaymentsApiKey
+	common.OptionMap["NOWPaymentsIPNSecret"] = setting.NOWPaymentsIPNSecret
+	common.OptionMap["NOWPaymentsEnabled"] = strconv.FormatBool(setting.NOWPaymentsEnabled)
+	common.OptionMap["NOWPaymentsFiatModeEnabled"] = strconv.FormatBool(setting.NOWPaymentsFiatModeEnabled)
+	common.OptionMap["NOWPaymentsCryptoModeEnabled"] = strconv.FormatBool(setting.NOWPaymentsCryptoModeEnabled)
+	common.OptionMap["NOWPaymentsUSDTNetworks"] = setting.NOWPaymentsUSDTNetworks
+	common.OptionMap["NOWPaymentsCryptoAmountOptions"] = setting.NOWPaymentsCryptoAmountOptions
 	common.OptionMap["CreemApiKey"] = setting.CreemApiKey
 	common.OptionMap["CreemProducts"] = setting.CreemProducts
 	common.OptionMap["CreemTestMode"] = strconv.FormatBool(setting.CreemTestMode)
@@ -296,6 +314,16 @@ func updateOptionMap(key string, value string) (err error) {
 			system_setting.WorkerAllowHttpImageRequestEnabled = boolValue
 		case "DefaultUseAutoGroup":
 			setting.DefaultUseAutoGroup = boolValue
+		case "BTCPayEnabled":
+			setting.BTCPayEnabled = boolValue
+		case "BEpusdtEnabled":
+			setting.BEpusdtEnabled = boolValue
+		case "NOWPaymentsEnabled":
+			setting.NOWPaymentsEnabled = boolValue
+		case "NOWPaymentsFiatModeEnabled":
+			setting.NOWPaymentsFiatModeEnabled = boolValue
+		case "NOWPaymentsCryptoModeEnabled":
+			setting.NOWPaymentsCryptoModeEnabled = boolValue
 		case "ExposeRatioEnabled":
 			ratio_setting.SetExposeRatioEnabled(boolValue)
 		}
@@ -350,6 +378,32 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.StripeMinTopUp, _ = strconv.Atoi(value)
 	case "StripePromotionCodesEnabled":
 		setting.StripePromotionCodesEnabled = value == "true"
+	case "BTCPayServerURL":
+		setting.BTCPayServerURL = value
+	case "BTCPayStoreID":
+		setting.BTCPayStoreID = value
+	case "BTCPayApiToken":
+		setting.BTCPayApiToken = value
+	case "BTCPayWebhookSecret":
+		setting.BTCPayWebhookSecret = value
+	case "BEpusdtBaseURL":
+		setting.BEpusdtBaseURL = value
+	case "BEpusdtToken":
+		setting.BEpusdtToken = value
+	case "BEpusdtWebhookSecret":
+		setting.BEpusdtWebhookSecret = value
+	case "BEpusdtUSDTNetworks":
+		setting.BEpusdtUSDTNetworks = value
+	case "BEpusdtOrderTimeout":
+		setting.BEpusdtOrderTimeout, _ = strconv.Atoi(value)
+	case "NOWPaymentsApiKey":
+		setting.NOWPaymentsApiKey = value
+	case "NOWPaymentsIPNSecret":
+		setting.NOWPaymentsIPNSecret = value
+	case "NOWPaymentsUSDTNetworks":
+		setting.NOWPaymentsUSDTNetworks = value
+	case "NOWPaymentsCryptoAmountOptions":
+		setting.NOWPaymentsCryptoAmountOptions = value
 	case "CreemApiKey":
 		setting.CreemApiKey = value
 	case "CreemProducts":

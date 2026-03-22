@@ -3,10 +3,12 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/console_setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
@@ -296,6 +298,51 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "BTCPayServerURL":
+		err = validateBTCPayServerURL(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "BEpusdtBaseURL":
+		err = validateBEpusdtBaseURL(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "BEpusdtUSDTNetworks":
+		err = validateBEpusdtUSDTNetworks(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "NOWPaymentsUSDTNetworks":
+		err = validateNOWPaymentsUSDTNetworks(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "NOWPaymentsCryptoAmountOptions":
+		err = validateNOWPaymentsCryptoAmountOptions(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
 	}
 	err = model.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {
@@ -307,4 +354,108 @@ func UpdateOption(c *gin.Context) {
 		"message": "",
 	})
 	return
+}
+
+func validateBTCPayServerURL(rawURL string) error {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return nil
+	}
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return fmt.Errorf("BTCPayServerURL 格式错误")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("BTCPayServerURL 只支持 HTTP 或 HTTPS")
+	}
+	if parsed.Host == "" {
+		return fmt.Errorf("BTCPayServerURL 必须包含服务器地址")
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("BTCPayServerURL 不能包含 query 或 fragment")
+	}
+	return nil
+}
+
+func validateBEpusdtBaseURL(rawURL string) error {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return nil
+	}
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return fmt.Errorf("BEpusdtBaseURL format is invalid")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("BEpusdtBaseURL only supports HTTP or HTTPS")
+	}
+	if parsed.Host == "" {
+		return fmt.Errorf("BEpusdtBaseURL must include a host")
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("BEpusdtBaseURL must not include query or fragment")
+	}
+	return nil
+}
+
+func validateBEpusdtUSDTNetworks(raw string) error {
+	networks, err := service.ParseBEpusdtUSDTNetworks(raw)
+	if err != nil {
+		return fmt.Errorf("BEpusdtUSDTNetworks format is invalid")
+	}
+	seen := make(map[string]struct{}, len(networks))
+	for _, network := range networks {
+		if network.Code == "" {
+			return fmt.Errorf("BEpusdtUSDTNetworks must include code")
+		}
+		if network.Name == "" {
+			return fmt.Errorf("BEpusdtUSDTNetworks must include name")
+		}
+		key := strings.ToLower(network.Code)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("BEpusdtUSDTNetworks code must be unique")
+		}
+		seen[key] = struct{}{}
+	}
+	return nil
+}
+
+func validateNOWPaymentsUSDTNetworks(raw string) error {
+	networks, err := service.ParseNOWPaymentsUSDTNetworks(raw)
+	if err != nil {
+		return fmt.Errorf("NOWPaymentsUSDTNetworks format is invalid")
+	}
+	seen := make(map[string]struct{}, len(networks))
+	for _, network := range networks {
+		if network.Code == "" {
+			return fmt.Errorf("NOWPaymentsUSDTNetworks must include code")
+		}
+		if network.Name == "" {
+			return fmt.Errorf("NOWPaymentsUSDTNetworks must include name")
+		}
+		key := strings.ToLower(network.Code)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("NOWPaymentsUSDTNetworks code must be unique")
+		}
+		seen[key] = struct{}{}
+	}
+	return nil
+}
+
+func validateNOWPaymentsCryptoAmountOptions(raw string) error {
+	options, err := service.ParseNOWPaymentsCryptoAmountOptions(raw)
+	if err != nil {
+		return fmt.Errorf("NOWPaymentsCryptoAmountOptions format is invalid")
+	}
+	seen := make(map[int]struct{}, len(options))
+	for _, option := range options {
+		if option <= 0 {
+			return fmt.Errorf("NOWPaymentsCryptoAmountOptions must be positive integers")
+		}
+		if _, ok := seen[option]; ok {
+			return fmt.Errorf("NOWPaymentsCryptoAmountOptions must be unique")
+		}
+		seen[option] = struct{}{}
+	}
+	return nil
 }

@@ -16,17 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import React, { useState, useEffect, useMemo } from 'react';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Badge,
+  Button,
+  Empty,
+  Input,
   Modal,
   Table,
-  Badge,
-  Typography,
-  Toast,
-  Empty,
-  Button,
-  Input,
   Tag,
+  Toast,
+  Typography,
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -40,19 +41,62 @@ import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
 const { Text } = Typography;
 
-// 状态映射配置
 const STATUS_CONFIG = {
   success: { type: 'success', key: '成功' },
   pending: { type: 'warning', key: '待支付' },
   expired: { type: 'danger', key: '已过期' },
 };
 
-// 支付方式映射
 const PAYMENT_METHOD_MAP = {
   stripe: 'Stripe',
   creem: 'Creem',
   alipay: '支付宝',
   wxpay: '微信',
+  btcpay: 'BTCPay',
+};
+
+const BEPUSDT_NETWORK_MAP = {
+  usdt_trc20: 'USDT on TRC20',
+  usdt_bep20: 'USDT on BEP20',
+  usdt_erc20: 'USDT on ERC20',
+  usdt_polygon: 'USDT on Polygon',
+  usdt_arbitrum: 'USDT on Arbitrum',
+  usdt_solana: 'USDT on Solana',
+};
+
+const NOWPAYMENTS_NETWORK_MAP = {
+  usdtton: 'USDT on TON',
+  usdttrc20: 'USDT on TRC20',
+  usdtbsc: 'USDT on BSC',
+  usdtarb: 'USDT on Arbitrum',
+};
+
+const isBEpusdtPayment = (paymentMethod) =>
+  String(paymentMethod || '').startsWith('bepusdt_');
+
+const isNOWPaymentsPayment = (paymentMethod) =>
+  String(paymentMethod || '').startsWith('nowpayments_');
+
+const getNOWPaymentsLabel = (paymentMethod) => {
+  const network = String(paymentMethod || '')
+    .replace(/^nowpayments_/, '')
+    .trim()
+    .toLowerCase();
+  if (!network) {
+    return 'NOWPayments';
+  }
+  return `NOWPayments · ${NOWPAYMENTS_NETWORK_MAP[network] || network.toUpperCase()}`;
+};
+
+const getBEpusdtLabel = (paymentMethod) => {
+  const network = String(paymentMethod || '')
+    .replace(/^bepusdt_/, '')
+    .trim()
+    .toLowerCase();
+  if (!network) {
+    return '虚拟货币支付';
+  }
+  return `虚拟货币支付 · ${BEPUSDT_NETWORK_MAP[network] || network.toUpperCase()}`;
 };
 
 const TopupHistoryModal = ({ visible, onCancel, t }) => {
@@ -82,8 +126,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         Toast.error({ content: message || t('加载失败') });
       }
     } catch (error) {
-      console.error('Load topups error:', error);
-      Toast.error({ content: t('加载账单失败') });
+      Toast.error({ content: t('加载充值记录失败') });
     } finally {
       setLoading(false);
     }
@@ -95,21 +138,6 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     }
   }, [visible, page, pageSize, keyword]);
 
-  const handlePageChange = (currentPage) => {
-    setPage(currentPage);
-  };
-
-  const handlePageSizeChange = (currentPageSize) => {
-    setPageSize(currentPageSize);
-    setPage(1);
-  };
-
-  const handleKeywordChange = (value) => {
-    setKeyword(value);
-    setPage(1);
-  };
-
-  // 管理员补单
   const handleAdminComplete = async (tradeNo) => {
     try {
       const res = await API.post('/api/user/topup/complete', {
@@ -135,7 +163,6 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     });
   };
 
-  // 渲染状态徽章
   const renderStatusBadge = (status) => {
     const config = STATUS_CONFIG[status] || { type: 'primary', key: status };
     return (
@@ -146,10 +173,15 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     );
   };
 
-  // 渲染支付方式
-  const renderPaymentMethod = (pm) => {
-    const displayName = PAYMENT_METHOD_MAP[pm];
-    return <Text>{displayName ? t(displayName) : pm || '-'}</Text>;
+  const renderPaymentMethod = (paymentMethod) => {
+    if (isBEpusdtPayment(paymentMethod)) {
+      return <Text>{getBEpusdtLabel(paymentMethod)}</Text>;
+    }
+    if (isNOWPaymentsPayment(paymentMethod)) {
+      return <Text>{getNOWPaymentsLabel(paymentMethod)}</Text>;
+    }
+    const displayName = PAYMENT_METHOD_MAP[paymentMethod];
+    return <Text>{displayName ? t(displayName) : paymentMethod || '-'}</Text>;
   };
 
   const isSubscriptionTopup = (record) => {
@@ -157,7 +189,49 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     return Number(record?.amount || 0) === 0 && tradeNo.startsWith('sub');
   };
 
-  // 检查是否为管理员
+  const renderAmountCell = (topupAmount, record) => {
+    if (isSubscriptionTopup(record)) {
+      return (
+        <Tag color='purple' shape='circle' size='small'>
+          {t('订阅套餐')}
+        </Tag>
+      );
+    }
+
+    if (isBEpusdtPayment(record?.payment_method)) {
+      return (
+        <div className='flex flex-col'>
+          <Text>{`¥${Number(topupAmount || 0).toFixed(2)}`}</Text>
+          <Text type='tertiary' size='small'>
+            {t('实付金额（人民币）')}
+          </Text>
+        </div>
+      );
+    }
+
+    return (
+      <span className='flex items-center gap-1'>
+        <Coins size={16} />
+        <Text>{topupAmount}</Text>
+      </span>
+    );
+  };
+
+  const renderSettlementCell = (money, record) => {
+    if (isBEpusdtPayment(record?.payment_method)) {
+      return (
+        <div className='flex flex-col'>
+          <Text type='danger'>${Number(money || 0).toFixed(2)}</Text>
+          <Text type='tertiary' size='small'>
+            {t('到账额度（美元）')}
+          </Text>
+        </div>
+      );
+    }
+
+    return <Text type='danger'>${Number(money || 0).toFixed(2)}</Text>;
+  };
+
   const userIsAdmin = useMemo(() => isAdmin(), []);
 
   const columns = useMemo(() => {
@@ -175,30 +249,16 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         render: renderPaymentMethod,
       },
       {
-        title: t('充值额度'),
+        title: t('订单金额'),
         dataIndex: 'amount',
         key: 'amount',
-        render: (amount, record) => {
-          if (isSubscriptionTopup(record)) {
-            return (
-              <Tag color='purple' shape='circle' size='small'>
-                {t('订阅套餐')}
-              </Tag>
-            );
-          }
-          return (
-            <span className='flex items-center gap-1'>
-              <Coins size={16} />
-              <Text>{amount}</Text>
-            </span>
-          );
-        },
+        render: renderAmountCell,
       },
       {
-        title: t('支付金额'),
+        title: t('结算信息'),
         dataIndex: 'money',
         key: 'money',
-        render: (money) => <Text type='danger'>¥{money.toFixed(2)}</Text>,
+        render: renderSettlementCell,
       },
       {
         title: t('状态'),
@@ -208,7 +268,6 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
       },
     ];
 
-    // 管理员才显示操作列
     if (userIsAdmin) {
       baseColumns.push({
         title: t('操作'),
@@ -241,7 +300,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
 
   return (
     <Modal
-      title={t('充值账单')}
+      title={t('充值记录')}
       visible={visible}
       onCancel={onCancel}
       footer={null}
@@ -252,7 +311,10 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
           prefix={<IconSearch />}
           placeholder={t('订单号')}
           value={keyword}
-          onChange={handleKeywordChange}
+          onChange={(value) => {
+            setKeyword(value);
+            setPage(1);
+          }}
           showClear
         />
       </div>
@@ -263,12 +325,15 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         rowKey='id'
         pagination={{
           currentPage: page,
-          pageSize: pageSize,
-          total: total,
+          pageSize,
+          total,
           showSizeChanger: true,
           pageSizeOpts: [10, 20, 50, 100],
-          onPageChange: handlePageChange,
-          onPageSizeChange: handlePageSizeChange,
+          onPageChange: setPage,
+          onPageSizeChange: (nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(1);
+          },
         }}
         size='small'
         empty={

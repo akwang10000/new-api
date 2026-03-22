@@ -1868,7 +1868,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "Success; response includes enable_btcpay_topup, enable_nowpayments_topup, nowpayments_modes, nowpayments_usdt_networks and nowpayments_crypto_amount_options",
             "headers": {}
           }
         },
@@ -1969,6 +1969,81 @@
         "responses": {
           "200": {
             "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/user/btcpay/pay": {
+      "post": {
+        "summary": "Create BTCPay invoice",
+        "deprecated": false,
+        "description": "Requires user auth. Creates a hosted BTCPay checkout link for wallet top-up.",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/user/nowpayments/quote": {
+      "post": {
+        "summary": "Create NOWPayments quote",
+        "deprecated": false,
+        "description": "Requires user auth. Validates NOWPayments minimum amount for the selected pricing mode and network.",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/user/nowpayments/pay": {
+      "post": {
+        "summary": "Create NOWPayments invoice",
+        "deprecated": false,
+        "description": "Requires user auth. Creates a hosted NOWPayments checkout link for wallet top-up.",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
             "headers": {}
           }
         },
@@ -2094,6 +2169,56 @@
         "responses": {
           "200": {
             "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/btcpay/webhook": {
+      "post": {
+        "summary": "BTCPay Webhook",
+        "deprecated": false,
+        "description": "No auth required. Receives BTCPay invoice webhooks and credits settled top-ups.",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/nowpayments/webhook": {
+      "post": {
+        "summary": "NOWPayments Webhook",
+        "deprecated": false,
+        "description": "No auth required. Verifies NOWPayments IPN signatures, rechecks payment details and credits finished top-ups.",
+        "tags": [
+          "Payment"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
             "headers": {}
           }
         },

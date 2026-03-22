@@ -20,30 +20,29 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Avatar,
-  Typography,
-  Tag,
-  Card,
-  Button,
   Banner,
-  Skeleton,
-  Form,
-  Space,
-  Row,
+  Button,
+  Card,
   Col,
+  Form,
+  Row,
+  Skeleton,
+  Space,
   Spin,
-  Tooltip,
   Tabs,
-  TabPane,
+  Tag,
+  Tooltip,
+  Typography,
 } from '@douyinfe/semi-ui';
-import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
+import { SiAlipay, SiStripe, SiWechat } from 'react-icons/si';
 import {
-  CreditCard,
-  Coins,
-  Wallet,
   BarChart2,
-  TrendingUp,
+  Coins,
+  CreditCard,
   Receipt,
   Sparkles,
+  TrendingUp,
+  Wallet,
 } from 'lucide-react';
 import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
@@ -51,11 +50,29 @@ import { getCurrencyConfig } from '../../helpers/render';
 import SubscriptionPlansCard from './SubscriptionPlansCard';
 
 const { Text } = Typography;
+const { TabPane } = Tabs;
 
 const RechargeCard = ({
   t,
   enableOnlineTopUp,
   enableStripeTopUp,
+  enableBTCPayTopUp,
+  enableBEpusdtTopUp,
+  bepusdtNetworks,
+  bepusdtTradeType,
+  setBEpusdtTradeType,
+  enableNOWPaymentsTopUp,
+  nowPaymentsModes,
+  nowPaymentsPricingMode,
+  setNowPaymentsPricingMode,
+  nowPaymentsNetworks,
+  nowPaymentsPayCurrency,
+  setNowPaymentsPayCurrency,
+  nowPaymentsCryptoAmountOptions,
+  nowPaymentsCryptoAmount,
+  setNowPaymentsCryptoAmount,
+  selectedNowPaymentsCryptoAmount,
+  setSelectedNowPaymentsCryptoAmount,
   enableCreemTopUp,
   creemProducts,
   creemPreTopUp,
@@ -76,6 +93,7 @@ const RechargeCard = ({
   preTopUp,
   paymentLoading,
   payWay,
+  isBEpusdtOnlyMode,
   redemptionCode,
   setRedemptionCode,
   topUp,
@@ -100,8 +118,30 @@ const RechargeCard = ({
   const initialTabSetRef = useRef(false);
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
   const [activeTab, setActiveTab] = useState('topup');
+
   const shouldShowSubscription =
     !subscriptionLoading && subscriptionPlans.length > 0;
+  const isNOWPaymentsCryptoMode =
+    enableNOWPaymentsTopUp && nowPaymentsPricingMode === 'crypto';
+  const shouldShowAnyTopUpMethod =
+    enableOnlineTopUp ||
+    enableStripeTopUp ||
+    enableBTCPayTopUp ||
+    enableBEpusdtTopUp ||
+    enableNOWPaymentsTopUp ||
+    enableCreemTopUp;
+  const shouldShowFiatAmountSection =
+    enableOnlineTopUp ||
+    enableStripeTopUp ||
+    enableBTCPayTopUp ||
+    enableBEpusdtTopUp ||
+    (enableNOWPaymentsTopUp && nowPaymentsPricingMode === 'fiat');
+  const availablePayMethods = (payMethods || []).filter((method) => {
+    if (isNOWPaymentsCryptoMode) {
+      return method.type === 'nowpayments';
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (initialTabSetRef.current) return;
@@ -115,9 +155,9 @@ const RechargeCard = ({
       setActiveTab('topup');
     }
   }, [shouldShowSubscription, activeTab]);
+
   const topupContent = (
     <Space vertical style={{ width: '100%' }}>
-      {/* 统计数据 */}
       <Card
         className='!rounded-xl w-full'
         cover={
@@ -137,10 +177,7 @@ const RechargeCard = ({
                   {t('账户统计')}
                 </Text>
               </div>
-
-              {/* 统计数据 */}
               <div className='grid grid-cols-3 gap-6 mt-4'>
-                {/* 当前余额 */}
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
@@ -164,8 +201,6 @@ const RechargeCard = ({
                     </Text>
                   </div>
                 </div>
-
-                {/* 历史消耗 */}
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
@@ -189,8 +224,6 @@ const RechargeCard = ({
                     </Text>
                   </div>
                 </div>
-
-                {/* 请求次数 */}
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
@@ -219,86 +252,225 @@ const RechargeCard = ({
           </div>
         }
       >
-        {/* 在线充值表单 */}
         {statusLoading ? (
           <div className='py-8 flex justify-center'>
             <Spin size='large' />
           </div>
-        ) : enableOnlineTopUp || enableStripeTopUp || enableCreemTopUp ? (
+        ) : shouldShowAnyTopUpMethod ? (
           <Form
             getFormApi={(api) => (onlineFormApiRef.current = api)}
-            initValues={{ topUpCount: topUpCount }}
+            initValues={{
+              topUpCount,
+              nowPaymentsCryptoAmount,
+            }}
           >
             <div className='space-y-6'>
-              {(enableOnlineTopUp || enableStripeTopUp) && (
+              {enableNOWPaymentsTopUp && (
+                <Form.Slot label={t('NOWPayments')}>
+                  <Space vertical style={{ width: '100%' }}>
+                    <Text type='tertiary'>
+                      请输入人民币金额，到账按 1 RMB = 1 USD 计算
+                    </Text>
+                    <div className='flex flex-wrap gap-2'>
+                      {nowPaymentsModes?.fiat && (
+                        <Button
+                          theme={
+                            nowPaymentsPricingMode === 'fiat'
+                              ? 'solid'
+                              : 'outline'
+                          }
+                          type='primary'
+                          onClick={() => setNowPaymentsPricingMode('fiat')}
+                        >
+                          {t('法币定价模式')}
+                        </Button>
+                      )}
+                      {nowPaymentsModes?.crypto && (
+                        <Button
+                          theme={
+                            nowPaymentsPricingMode === 'crypto'
+                              ? 'solid'
+                              : 'outline'
+                          }
+                          type='primary'
+                          onClick={() => setNowPaymentsPricingMode('crypto')}
+                        >
+                          {t('链上币定价模式')}
+                        </Button>
+                      )}
+                    </div>
+                    <div className='flex flex-wrap gap-2'>
+                      {nowPaymentsNetworks.map((network) => (
+                        <Button
+                          key={network.code}
+                          theme={
+                            nowPaymentsPayCurrency === network.code
+                              ? 'solid'
+                              : 'outline'
+                          }
+                          type='tertiary'
+                          onClick={() => setNowPaymentsPayCurrency(network.code)}
+                        >
+                          {network.name}
+                        </Button>
+                      ))}
+                    </div>
+                    {isNOWPaymentsCryptoMode && (
+                      <Text type='tertiary'>
+                        {t('到账按 1 USDT = 1 USD 等值计算')}
+                      </Text>
+                    )}
+                  </Space>
+                </Form.Slot>
+              )}
+              {enableBEpusdtTopUp && (
+                <Form.Slot label={t('虚拟货币支付')}>
+                  <Space vertical style={{ width: '100%' }}>
+                    <Text type='tertiary'>
+                      {t('请选择你希望用户支付的 USDT 网络')}
+                    </Text>
+                    <div className='flex flex-wrap gap-2'>
+                      {bepusdtNetworks.map((network) => (
+                        <Button
+                          key={network.code}
+                          theme={
+                            bepusdtTradeType === network.code
+                              ? 'solid'
+                              : 'outline'
+                          }
+                          type='tertiary'
+                          onClick={() => setBEpusdtTradeType(network.code)}
+                        >
+                          {network.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </Space>
+                </Form.Slot>
+              )}
+
+              {(shouldShowFiatAmountSection || isNOWPaymentsCryptoMode) && (
                 <Row gutter={12}>
                   <Col xs={24} sm={24} md={24} lg={10} xl={10}>
-                    <Form.InputNumber
-                      field='topUpCount'
-                      label={t('充值数量')}
-                      disabled={!enableOnlineTopUp && !enableStripeTopUp}
-                      placeholder={
-                        t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
-                      }
-                      value={topUpCount}
-                      min={minTopUp}
-                      max={999999999}
-                      step={1}
-                      precision={0}
-                      onChange={async (value) => {
-                        if (value && value >= 1) {
-                          setTopUpCount(value);
-                          setSelectedPreset(null);
-                          await getAmount(value);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (!value || value < 1) {
-                          setTopUpCount(1);
-                          getAmount(1);
-                        }
-                      }}
-                      formatter={(value) => (value ? `${value}` : '')}
-                      parser={(value) =>
-                        value ? parseInt(value.replace(/[^\d]/g, '')) : 0
-                      }
-                      extraText={
-                        <Skeleton
-                          loading={showAmountSkeleton}
-                          active
-                          placeholder={
-                            <Skeleton.Title
-                              style={{
-                                width: 120,
-                                height: 20,
-                                borderRadius: 6,
-                              }}
-                            />
+                    {isNOWPaymentsCryptoMode ? (
+                      <Form.InputNumber
+                        field='nowPaymentsCryptoAmount'
+                        label={t('支付数量')}
+                        placeholder={t('请输入 USDT 数量')}
+                        value={nowPaymentsCryptoAmount}
+                        min={1}
+                        max={999999999}
+                        step={1}
+                        precision={0}
+                        onChange={(value) => {
+                          if (value && value >= 1) {
+                            setNowPaymentsCryptoAmount(value);
+                            setSelectedNowPaymentsCryptoAmount(value);
                           }
-                        >
-                          <Text type='secondary' className='text-red-600'>
-                            {t('实付金额：')}
-                            <span style={{ color: 'red' }}>
-                              {renderAmount()}
-                            </span>
+                        }}
+                        formatter={(value) => (value ? `${value}` : '')}
+                        parser={(value) =>
+                          value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                        }
+                        extraText={
+                          <Text type='secondary'>
+                            {t('到账按 1 USDT = 1 USD 等值计算')}
                           </Text>
-                        </Skeleton>
-                      }
-                      style={{ width: '100%' }}
-                    />
+                        }
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      <Form.InputNumber
+                        field='topUpCount'
+                        label={
+                          isBEpusdtOnlyMode
+                            ? t('支付人民币金额')
+                            : t('充值数量')
+                        }
+                        disabled={!shouldShowFiatAmountSection}
+                        placeholder={
+                          isBEpusdtOnlyMode
+                            ? `${t('支付人民币金额，最低 ')}${minTopUp} RMB`
+                            : t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
+                        }
+                        value={topUpCount}
+                        min={minTopUp}
+                        max={999999999}
+                        step={1}
+                        precision={0}
+                        onChange={async (value) => {
+                          if (value && value >= 1) {
+                            setTopUpCount(value);
+                            setSelectedPreset(null);
+                            await getAmount(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!value || value < minTopUp) {
+                            setTopUpCount(minTopUp);
+                            getAmount(minTopUp);
+                          }
+                        }}
+                        formatter={(value) => (value ? `${value}` : '')}
+                        parser={(value) =>
+                          value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                        }
+                        extraText={
+                          <Skeleton
+                            loading={showAmountSkeleton}
+                            active
+                            placeholder={
+                              <Skeleton.Title
+                                style={{
+                                  width: 120,
+                                  height: 20,
+                                  borderRadius: 6,
+                                }}
+                              />
+                            }
+                          >
+                            <Text type='secondary' className='text-red-600'>
+                              {isBEpusdtOnlyMode
+                                ? `${t('到账额度：')}${Number(topUpCount || 0).toFixed(2)} USD · ${t('实付金额：')}`
+                                : t('实付金额：')}
+                              <span style={{ color: 'red' }}>
+                                {renderAmount()}
+                              </span>
+                            </Text>
+                          </Skeleton>
+                        }
+                        style={{ width: '100%' }}
+                      />
+                    )}
                   </Col>
                   <Col xs={24} sm={24} md={24} lg={14} xl={14}>
                     <Form.Slot label={t('选择支付方式')}>
-                      {payMethods && payMethods.length > 0 ? (
+                      {availablePayMethods.length > 0 ? (
                         <Space wrap>
-                          {payMethods.map((payMethod) => {
+                          {availablePayMethods.map((payMethod) => {
                             const minTopupVal = Number(payMethod.min_topup) || 0;
                             const isStripe = payMethod.type === 'stripe';
-                            const disabled =
-                              (!enableOnlineTopUp && !isStripe) ||
-                              (!enableStripeTopUp && isStripe) ||
+                            const isBTCPay = payMethod.type === 'btcpay';
+                            const isBEpusdt = payMethod.type === 'bepusdt';
+                            const isNOWPayments =
+                              payMethod.type === 'nowpayments';
+                            const insufficientMin =
+                              !isNOWPaymentsCryptoMode &&
                               minTopupVal > Number(topUpCount || 0);
+                            const disabled =
+                              (!enableOnlineTopUp &&
+                                !isStripe &&
+                                !isBTCPay &&
+                                !isBEpusdt &&
+                                !isNOWPayments) ||
+                              (!enableStripeTopUp && isStripe) ||
+                              (!enableBTCPayTopUp && isBTCPay) ||
+                              (!enableBEpusdtTopUp && isBEpusdt) ||
+                              (!enableNOWPaymentsTopUp && isNOWPayments) ||
+                              (isBEpusdt && !bepusdtTradeType) ||
+                              (isNOWPayments && !nowPaymentsPayCurrency) ||
+                              insufficientMin;
 
                             const buttonEl = (
                               <Button
@@ -333,8 +505,7 @@ const RechargeCard = ({
                               </Button>
                             );
 
-                            return disabled &&
-                              minTopupVal > Number(topUpCount || 0) ? (
+                            return insufficientMin ? (
                               <Tooltip
                                 content={
                                   t('此支付方式最低充值金额为') +
@@ -362,15 +533,31 @@ const RechargeCard = ({
                 </Row>
               )}
 
-              {(enableOnlineTopUp || enableStripeTopUp) && (
+              {shouldShowFiatAmountSection && (
                 <Form.Slot
                   label={
                     <div className='flex items-center gap-2'>
-                      <span>{t('选择充值额度')}</span>
+                      <span>
+                        {isBEpusdtOnlyMode
+                          ? t('选择支付金额')
+                          : t('选择充值额度')}
+                      </span>
                       {(() => {
+                        if (isBEpusdtOnlyMode) {
+                          return (
+                            <span
+                              style={{
+                                color: 'var(--semi-color-text-2)',
+                                fontSize: '12px',
+                                fontWeight: 'normal',
+                              }}
+                            >
+                              (1 RMB = 1 USD)
+                            </span>
+                          );
+                        }
                         const { symbol, rate, type } = getCurrencyConfig();
                         if (type === 'USD') return null;
-
                         return (
                           <span
                             style={{
@@ -388,38 +575,81 @@ const RechargeCard = ({
                 >
                   <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'>
                     {presetAmounts.map((preset, index) => {
+                      if (isBEpusdtOnlyMode) {
+                        return (
+                          <Card
+                            key={index}
+                            style={{
+                              cursor: 'pointer',
+                              border:
+                                selectedPreset === preset.value
+                                  ? '2px solid var(--semi-color-primary)'
+                                  : '1px solid var(--semi-color-border)',
+                              height: '100%',
+                              width: '100%',
+                            }}
+                            bodyStyle={{ padding: '12px' }}
+                            onClick={() => {
+                              selectPresetAmount(preset);
+                              onlineFormApiRef.current?.setValue(
+                                'topUpCount',
+                                preset.value,
+                              );
+                            }}
+                          >
+                            <div style={{ textAlign: 'center' }}>
+                              <Typography.Title
+                                heading={6}
+                                style={{ margin: '0 0 8px 0' }}
+                              >
+                                <Coins size={18} />
+                                {formatLargeNumber(preset.value)} RMB
+                              </Typography.Title>
+                              <div
+                                style={{
+                                  color: 'var(--semi-color-text-2)',
+                                  fontSize: '12px',
+                                  margin: '4px 0',
+                                }}
+                              >
+                                {t('到账')} {preset.value} USD
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      }
                       const discount =
-                        preset.discount || topupInfo?.discount?.[preset.value] || 1.0;
+                        preset.discount ||
+                        topupInfo?.discount?.[preset.value] ||
+                        1.0;
                       const originalPrice = preset.value * priceRatio;
                       const discountedPrice = originalPrice * discount;
                       const hasDiscount = discount < 1.0;
                       const actualPay = discountedPrice;
                       const save = originalPrice - discountedPrice;
 
-                      // 根据当前货币类型换算显示金额和数量
                       const { symbol, rate, type } = getCurrencyConfig();
                       const statusStr = localStorage.getItem('status');
-                      let usdRate = 7; // 默认CNY汇率
+                      let usdRate = 7;
                       try {
                         if (statusStr) {
-                          const s = JSON.parse(statusStr);
-                          usdRate = s?.usd_exchange_rate || 7;
+                          const status = JSON.parse(statusStr);
+                          usdRate = status?.usd_exchange_rate || 7;
                         }
-                      } catch (e) { }
+                      } catch (e) {
+                        // ignore
+                      }
 
-                      let displayValue = preset.value; // 显示的数量
+                      let displayValue = preset.value;
                       let displayActualPay = actualPay;
                       let displaySave = save;
 
                       if (type === 'USD') {
-                        // 数量保持USD，价格从CNY转USD
                         displayActualPay = actualPay / usdRate;
                         displaySave = save / usdRate;
                       } else if (type === 'CNY') {
-                        // 数量转CNY，价格已是CNY
                         displayValue = preset.value * usdRate;
                       } else if (type === 'CUSTOM') {
-                        // 数量和价格都转自定义货币
                         displayValue = preset.value * rate;
                         displayActualPay = (actualPay / usdRate) * rate;
                         displaySave = (save / usdRate) * rate;
@@ -483,7 +713,44 @@ const RechargeCard = ({
                 </Form.Slot>
               )}
 
-              {/* Creem 充值区域 */}
+              {isNOWPaymentsCryptoMode && (
+                <Form.Slot label={t('快捷选择 USDT 金额')}>
+                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2'>
+                    {nowPaymentsCryptoAmountOptions.map((option) => (
+                      <Card
+                        key={option}
+                        style={{
+                          cursor: 'pointer',
+                          border:
+                            selectedNowPaymentsCryptoAmount === option
+                              ? '2px solid var(--semi-color-primary)'
+                              : '1px solid var(--semi-color-border)',
+                        }}
+                        bodyStyle={{ padding: '12px', textAlign: 'center' }}
+                        onClick={() => {
+                          setNowPaymentsCryptoAmount(option);
+                          setSelectedNowPaymentsCryptoAmount(option);
+                          onlineFormApiRef.current?.setValue(
+                            'nowPaymentsCryptoAmount',
+                            option,
+                          );
+                        }}
+                      >
+                        <Typography.Title
+                          heading={6}
+                          style={{ margin: '0 0 6px 0' }}
+                        >
+                          {option} USDT
+                        </Typography.Title>
+                        <Text type='tertiary'>
+                          {t('等值')} {option} USD
+                        </Text>
+                      </Card>
+                    ))}
+                  </div>
+                </Form.Slot>
+              )}
+
               {enableCreemTopUp && creemProducts.length > 0 && (
                 <Form.Slot label={t('Creem 充值')}>
                   <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
@@ -523,7 +790,6 @@ const RechargeCard = ({
         )}
       </Card>
 
-      {/* 兑换码充值 */}
       <Card
         className='!rounded-xl w-full'
         title={
@@ -534,7 +800,7 @@ const RechargeCard = ({
       >
         <Form
           getFormApi={(api) => (redeemFormApiRef.current = api)}
-          initValues={{ redemptionCode: redemptionCode }}
+          initValues={{ redemptionCode }}
         >
           <Form.Input
             field='redemptionCode'
@@ -580,7 +846,6 @@ const RechargeCard = ({
 
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
-      {/* 卡片头部 */}
       <div className='flex items-center justify-between mb-4'>
         <div className='flex items-center'>
           <Avatar size='small' color='blue' className='mr-3 shadow-md'>

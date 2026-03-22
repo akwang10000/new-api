@@ -25,9 +25,16 @@ import (
 func GetTopUpInfo(c *gin.Context) {
 	// 获取支付方式
 	payMethods := operation_setting.PayMethods
+	enableStripeTopUp := setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != ""
+	enableBTCPayTopUp := service.IsBTCPayEnabled()
+	enableBEpusdtTopUp := service.IsBEpusdtEnabled()
+	bepusdtNetworks := service.GetEnabledBEpusdtNetworks()
+	enableNOWPaymentsTopUp := service.IsNOWPaymentsEnabled()
+	nowPaymentsNetworks := service.GetEnabledNOWPaymentsNetworks()
+	nowPaymentsCryptoAmountOptions, _ := service.ParseNOWPaymentsCryptoAmountOptions(setting.NOWPaymentsCryptoAmountOptions)
 
 	// 如果启用了 Stripe 支付，添加到支付方法列表
-	if setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "" {
+	if enableStripeTopUp {
 		// 检查是否已经包含 Stripe
 		hasStripe := false
 		for _, method := range payMethods {
@@ -47,17 +54,78 @@ func GetTopUpInfo(c *gin.Context) {
 			payMethods = append(payMethods, stripeMethod)
 		}
 	}
+	if enableBTCPayTopUp {
+		hasBTCPay := false
+		for _, method := range payMethods {
+			if method["type"] == PaymentMethodBTCPay {
+				hasBTCPay = true
+				break
+			}
+		}
+
+		if !hasBTCPay {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "BTCPay",
+				"type":      PaymentMethodBTCPay,
+				"color":     "rgba(var(--semi-orange-5), 1)",
+				"min_topup": strconv.Itoa(operation_setting.MinTopUp),
+			})
+		}
+	}
+	if enableNOWPaymentsTopUp {
+		hasNOWPayments := false
+		for _, method := range payMethods {
+			if method["type"] == PaymentMethodNOWPayments {
+				hasNOWPayments = true
+				break
+			}
+		}
+
+		if !hasNOWPayments {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "NOWPayments",
+				"type":      PaymentMethodNOWPayments,
+				"color":     "rgba(var(--semi-teal-5), 1)",
+				"min_topup": strconv.Itoa(operation_setting.MinTopUp),
+			})
+		}
+	}
+	if enableBEpusdtTopUp {
+		hasBEpusdt := false
+		for _, method := range payMethods {
+			if method["type"] == PaymentMethodBEpusdt {
+				hasBEpusdt = true
+				break
+			}
+		}
+
+		if !hasBEpusdt {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "虚拟货币支付",
+				"type":      PaymentMethodBEpusdt,
+				"color":     "rgba(var(--semi-cyan-5), 1)",
+				"min_topup": strconv.Itoa(operation_setting.MinTopUp),
+			})
+		}
+	}
 
 	data := gin.H{
-		"enable_online_topup": operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != "",
-		"enable_stripe_topup": setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "",
-		"enable_creem_topup":  setting.CreemApiKey != "" && setting.CreemProducts != "[]",
-		"creem_products":      setting.CreemProducts,
-		"pay_methods":         payMethods,
-		"min_topup":           operation_setting.MinTopUp,
-		"stripe_min_topup":    setting.StripeMinTopUp,
-		"amount_options":      operation_setting.GetPaymentSetting().AmountOptions,
-		"discount":            operation_setting.GetPaymentSetting().AmountDiscount,
+		"enable_online_topup":               operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != "",
+		"enable_stripe_topup":               enableStripeTopUp,
+		"enable_creem_topup":                setting.CreemApiKey != "" && setting.CreemProducts != "[]",
+		"enable_btcpay_topup":               enableBTCPayTopUp,
+		"enable_bepusdt_topup":              enableBEpusdtTopUp,
+		"bepusdt_usdt_networks":             bepusdtNetworks,
+		"enable_nowpayments_topup":          enableNOWPaymentsTopUp,
+		"nowpayments_modes":                 gin.H{"fiat": setting.NOWPaymentsFiatModeEnabled, "crypto": setting.NOWPaymentsCryptoModeEnabled},
+		"nowpayments_usdt_networks":         nowPaymentsNetworks,
+		"nowpayments_crypto_amount_options": nowPaymentsCryptoAmountOptions,
+		"creem_products":                    setting.CreemProducts,
+		"pay_methods":                       payMethods,
+		"min_topup":                         operation_setting.MinTopUp,
+		"stripe_min_topup":                  setting.StripeMinTopUp,
+		"amount_options":                    operation_setting.GetPaymentSetting().AmountOptions,
+		"discount":                          operation_setting.GetPaymentSetting().AmountDiscount,
 	}
 	common.ApiSuccess(c, data)
 }
@@ -115,6 +183,14 @@ func getPayMoney(amount int64, group string) float64 {
 	return payMoney.InexactFloat64()
 }
 
+func getPayMoneyUSD(amount int64, group string) (float64, error) {
+	rate := decimal.NewFromFloat(operation_setting.USDExchangeRate)
+	if rate.LessThanOrEqual(decimal.Zero) {
+		return 0, fmt.Errorf("USD 姹囩巼閰嶇疆閿欒")
+	}
+	return decimal.NewFromFloat(getPayMoney(amount, group)).Div(rate).Round(2).InexactFloat64(), nil
+}
+
 func getMinTopup() int64 {
 	minTopup := operation_setting.MinTopUp
 	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
@@ -123,6 +199,36 @@ func getMinTopup() int64 {
 		minTopup = int(dMinTopup.Mul(dQuotaPerUnit).IntPart())
 	}
 	return int64(minTopup)
+}
+
+func getPayMoneyCNY(amount int64, group string) (float64, error) {
+	payMoney := decimal.NewFromFloat(getPayMoney(amount, group))
+	switch operation_setting.GetQuotaDisplayType() {
+	case operation_setting.QuotaDisplayTypeCNY:
+		return payMoney.Round(2).InexactFloat64(), nil
+	case operation_setting.QuotaDisplayTypeUSD, operation_setting.QuotaDisplayTypeTokens:
+		rate := decimal.NewFromFloat(operation_setting.USDExchangeRate)
+		if rate.LessThanOrEqual(decimal.Zero) {
+			return 0, fmt.Errorf("USD exchange rate is invalid")
+		}
+		return payMoney.Mul(rate).Round(2).InexactFloat64(), nil
+	case operation_setting.QuotaDisplayTypeCustom:
+		customRate := decimal.NewFromFloat(operation_setting.GetGeneralSetting().CustomCurrencyExchangeRate)
+		if customRate.LessThanOrEqual(decimal.Zero) {
+			return 0, fmt.Errorf("custom currency exchange rate is invalid")
+		}
+		usdRate := decimal.NewFromFloat(operation_setting.USDExchangeRate)
+		if usdRate.LessThanOrEqual(decimal.Zero) {
+			return 0, fmt.Errorf("USD exchange rate is invalid")
+		}
+		return payMoney.Div(customRate).Mul(usdRate).Round(2).InexactFloat64(), nil
+	default:
+		rate := decimal.NewFromFloat(operation_setting.USDExchangeRate)
+		if rate.LessThanOrEqual(decimal.Zero) {
+			return 0, fmt.Errorf("USD exchange rate is invalid")
+		}
+		return payMoney.Mul(rate).Round(2).InexactFloat64(), nil
+	}
 }
 
 func RequestEpay(c *gin.Context) {

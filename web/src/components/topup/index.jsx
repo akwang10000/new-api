@@ -17,16 +17,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   API,
+  copy,
+  getQuotaPerUnit,
+  renderQuota,
+  renderQuotaWithAmount,
   showError,
   showInfo,
   showSuccess,
-  renderQuota,
-  renderQuotaWithAmount,
-  copy,
-  getQuotaPerUnit,
 } from '../../helpers';
 import { Modal, Toast } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +38,14 @@ import InvitationCard from './InvitationCard';
 import TransferModal from './modals/TransferModal';
 import PaymentConfirmModal from './modals/PaymentConfirmModal';
 import TopupHistoryModal from './modals/TopupHistoryModal';
+
+const defaultNOWPaymentsModes = {
+  fiat: false,
+  crypto: false,
+};
+
+const defaultNOWPaymentsCryptoAmountOptions = [5, 10, 20, 50, 100];
+const defaultBEpusdtNetworks = [];
 
 const TopUp = () => {
   const { t } = useTranslation();
@@ -61,9 +69,30 @@ const TopUp = () => {
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(
     statusState?.status?.enable_stripe_topup || false,
   );
+  const [enableBTCPayTopUp, setEnableBTCPayTopUp] = useState(false);
+  const [enableBEpusdtTopUp, setEnableBEpusdtTopUp] = useState(false);
+  const [bepusdtNetworks, setBEpusdtNetworks] = useState(
+    defaultBEpusdtNetworks,
+  );
+  const [bepusdtTradeType, setBEpusdtTradeType] = useState('');
+  const [enableNOWPaymentsTopUp, setEnableNOWPaymentsTopUp] = useState(false);
+  const [nowPaymentsModes, setNowPaymentsModes] = useState(
+    defaultNOWPaymentsModes,
+  );
+  const [nowPaymentsPricingMode, setNowPaymentsPricingMode] =
+    useState('fiat');
+  const [nowPaymentsNetworks, setNowPaymentsNetworks] = useState([]);
+  const [nowPaymentsPayCurrency, setNowPaymentsPayCurrency] = useState('');
+  const [nowPaymentsCryptoAmountOptions, setNowPaymentsCryptoAmountOptions] =
+    useState(defaultNOWPaymentsCryptoAmountOptions);
+  const [nowPaymentsCryptoAmount, setNowPaymentsCryptoAmount] = useState(
+    defaultNOWPaymentsCryptoAmountOptions[0],
+  );
+  const [selectedNowPaymentsCryptoAmount, setSelectedNowPaymentsCryptoAmount] =
+    useState(defaultNOWPaymentsCryptoAmountOptions[0]);
+  const [nowPaymentsQuote, setNowPaymentsQuote] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // Creem 相关状态
   const [creemProducts, setCreemProducts] = useState([]);
   const [enableCreemTopUp, setEnableCreemTopUp] = useState(false);
   const [creemOpen, setCreemOpen] = useState(false);
@@ -79,15 +108,11 @@ const TopUp = () => {
 
   const affFetchedRef = useRef(false);
 
-  // 邀请相关状态
   const [affLink, setAffLink] = useState('');
   const [openTransfer, setOpenTransfer] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0);
-
-  // 账单Modal状态
   const [openHistory, setOpenHistory] = useState(false);
 
-  // 订阅相关
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [billingPreference, setBillingPreference] =
@@ -95,15 +120,23 @@ const TopUp = () => {
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [allSubscriptions, setAllSubscriptions] = useState([]);
 
-  // 预设充值额度选项
   const [presetAmounts, setPresetAmounts] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
 
-  // 充值配置信息
   const [topupInfo, setTopupInfo] = useState({
     amount_options: [],
     discount: {},
   });
+
+  const isBEpusdtOnlyMode = () => {
+    return (
+      enableBEpusdtTopUp &&
+      !enableOnlineTopUp &&
+      !enableStripeTopUp &&
+      !enableBTCPayTopUp &&
+      !enableNOWPaymentsTopUp
+    );
+  };
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -149,17 +182,76 @@ const TopUp = () => {
     window.open(topUpLink, '_blank');
   };
 
+  const getCurrentNOWPaymentsAmount = () => {
+    return nowPaymentsPricingMode === 'crypto'
+      ? nowPaymentsCryptoAmount
+      : topUpCount;
+  };
+
+  const getNOWPaymentsQuote = async (value) => {
+    const amountValue = value ?? getCurrentNOWPaymentsAmount();
+    const res = await API.post('/api/user/nowpayments/quote', {
+      amount: parseInt(amountValue),
+      pricing_mode: nowPaymentsPricingMode,
+      pay_currency: nowPaymentsPayCurrency,
+      payment_method: 'nowpayments',
+    });
+    const { message, data } = res.data;
+    if (message === 'success') {
+      setNowPaymentsQuote(data);
+      return data;
+    }
+    setNowPaymentsQuote(null);
+    throw new Error(typeof data === 'string' ? data : message);
+  };
+
+  const ensureNOWPaymentsReady = async () => {
+    if (!enableNOWPaymentsTopUp) {
+      showError(t('管理员未开启 NOWPayments 充值！'));
+      return false;
+    }
+    if (!nowPaymentsPayCurrency) {
+      showError(t('请选择 USDT 网络'));
+      return false;
+    }
+    const quote = await getNOWPaymentsQuote();
+    if (!quote?.meets_minimum) {
+      showError(
+        `${t('当前金额低于该网络最小支付金额')} (${quote?.minimum_amount || 0})`,
+      );
+      return false;
+    }
+    return true;
+  };
+
   const preTopUp = async (payment) => {
     if (payment === 'stripe') {
       if (!enableStripeTopUp) {
-        showError(t('管理员未开启Stripe充值！'));
+        showError(t('管理员未开启 Stripe 充值！'));
         return;
       }
-    } else {
-      if (!enableOnlineTopUp) {
-        showError(t('管理员未开启在线充值！'));
+    } else if (payment === 'btcpay') {
+      if (!enableBTCPayTopUp) {
+        showError(t('管理员未开启 BTCPay 充值！'));
         return;
       }
+    } else if (payment === 'bepusdt') {
+      if (!enableBEpusdtTopUp) {
+        showError(t('管理员未开启 BEpusdt 充值！'));
+        return;
+      }
+      if (!bepusdtTradeType) {
+        showError(t('请选择 USDT 网络'));
+        return;
+      }
+    } else if (payment === 'nowpayments') {
+      if (!enableNOWPaymentsTopUp) {
+        showError(t('管理员未开启 NOWPayments 充值！'));
+        return;
+      }
+    } else if (!enableOnlineTopUp) {
+      showError(t('管理员未开启在线充值！'));
+      return;
     }
 
     setPayWay(payment);
@@ -167,17 +259,24 @@ const TopUp = () => {
     try {
       if (payment === 'stripe') {
         await getStripeAmount();
+      } else if (payment === 'bepusdt') {
+        setAmount(parseFloat(topUpCount || 0));
+      } else if (payment === 'nowpayments') {
+        const ready = await ensureNOWPaymentsReady();
+        if (!ready) {
+          return;
+        }
       } else {
         await getAmount();
       }
 
-      if (topUpCount < minTopUp) {
+      if (payment !== 'nowpayments' && topUpCount < minTopUp) {
         showError(t('充值数量不能小于') + minTopUp);
         return;
       }
       setOpen(true);
     } catch (error) {
-      showError(t('获取金额失败'));
+      showError(error?.message || t('获取金额失败'));
     } finally {
       setPaymentLoading(false);
     }
@@ -185,32 +284,52 @@ const TopUp = () => {
 
   const onlineTopUp = async () => {
     if (payWay === 'stripe') {
-      // Stripe 支付处理
       if (amount === 0) {
         await getStripeAmount();
       }
-    } else {
-      // 普通支付处理
-      if (amount === 0) {
-        await getAmount();
+    } else if (payWay === 'bepusdt') {
+      setAmount(parseFloat(topUpCount || 0));
+    } else if (payWay === 'nowpayments') {
+      const ready = await ensureNOWPaymentsReady();
+      if (!ready) {
+        return;
       }
+    } else if (amount === 0) {
+      await getAmount();
     }
 
-    if (topUpCount < minTopUp) {
-      showError('充值数量不能小于' + minTopUp);
+    if (payWay !== 'nowpayments' && topUpCount < minTopUp) {
+      showError(t('充值数量不能小于') + minTopUp);
       return;
     }
+
     setConfirmLoading(true);
     try {
       let res;
       if (payWay === 'stripe') {
-        // Stripe 支付请求
         res = await API.post('/api/user/stripe/pay', {
           amount: parseInt(topUpCount),
           payment_method: 'stripe',
         });
+      } else if (payWay === 'btcpay') {
+        res = await API.post('/api/user/btcpay/pay', {
+          amount: parseInt(topUpCount),
+          payment_method: 'btcpay',
+        });
+      } else if (payWay === 'bepusdt') {
+        res = await API.post('/api/user/bepusdt/pay', {
+          amount: parseInt(topUpCount),
+          trade_type: bepusdtTradeType,
+          payment_method: 'bepusdt',
+        });
+      } else if (payWay === 'nowpayments') {
+        res = await API.post('/api/user/nowpayments/pay', {
+          amount: parseInt(getCurrentNOWPaymentsAmount()),
+          pricing_mode: nowPaymentsPricingMode,
+          pay_currency: nowPaymentsPayCurrency,
+          payment_method: 'nowpayments',
+        });
       } else {
-        // 普通支付请求
         res = await API.post('/api/user/pay', {
           amount: parseInt(topUpCount),
           payment_method: payWay,
@@ -220,24 +339,27 @@ const TopUp = () => {
       if (res !== undefined) {
         const { message, data } = res.data;
         if (message === 'success') {
-          if (payWay === 'stripe') {
-            // Stripe 支付回调处理
+          if (
+            payWay === 'stripe' ||
+            payWay === 'btcpay' ||
+            payWay === 'bepusdt' ||
+            payWay === 'nowpayments'
+          ) {
             window.open(data.pay_link, '_blank');
           } else {
-            // 普通支付表单提交
-            let params = data;
-            let url = res.data.url;
-            let form = document.createElement('form');
+            const params = data;
+            const url = res.data.url;
+            const form = document.createElement('form');
             form.action = url;
             form.method = 'POST';
-            let isSafari =
+            const isSafari =
               navigator.userAgent.indexOf('Safari') > -1 &&
               navigator.userAgent.indexOf('Chrome') < 1;
             if (!isSafari) {
               form.target = '_blank';
             }
-            for (let key in params) {
-              let input = document.createElement('input');
+            for (const key in params) {
+              const input = document.createElement('input');
               input.type = 'hidden';
               input.name = key;
               input.value = params[key];
@@ -256,7 +378,6 @@ const TopUp = () => {
         showError(res);
       }
     } catch (err) {
-      console.log(err);
       showError(t('支付请求失败'));
     } finally {
       setOpen(false);
@@ -278,7 +399,6 @@ const TopUp = () => {
       showError(t('请选择产品'));
       return;
     }
-    // Validate product has required fields
     if (!selectedCreemProduct.productId) {
       showError(t('产品配置错误，请联系管理员'));
       return;
@@ -292,7 +412,7 @@ const TopUp = () => {
       if (res !== undefined) {
         const { message, data } = res.data;
         if (message === 'success') {
-          processCreemCallback(data);
+          window.open(data.checkout_url, '_blank');
         } else {
           const errorMsg =
             typeof data === 'string' ? data : message || t('支付失败');
@@ -302,7 +422,6 @@ const TopUp = () => {
         showError(res);
       }
     } catch (err) {
-      console.log(err);
       showError(t('支付请求失败'));
     } finally {
       setCreemOpen(false);
@@ -310,13 +429,8 @@ const TopUp = () => {
     }
   };
 
-  const processCreemCallback = (data) => {
-    // 与 Stripe 保持一致的实现方式
-    window.open(data.checkout_url, '_blank');
-  };
-
   const getUserQuota = async () => {
-    let res = await API.get(`/api/user/self`);
+    const res = await API.get('/api/user/self');
     const { success, message, data } = res.data;
     if (success) {
       userDispatch({ type: 'login', payload: data });
@@ -346,12 +460,8 @@ const TopUp = () => {
         setBillingPreference(
           res.data.data?.billing_preference || 'subscription_first',
         );
-        // Active subscriptions
-        const activeSubs = res.data.data?.subscriptions || [];
-        setActiveSubscriptions(activeSubs);
-        // All subscriptions (including expired)
-        const allSubs = res.data.data?.all_subscriptions || [];
-        setAllSubscriptions(allSubs);
+        setActiveSubscriptions(res.data.data?.subscriptions || []);
+        setAllSubscriptions(res.data.data?.all_subscriptions || []);
       }
     } catch (e) {
       // ignore
@@ -380,139 +490,179 @@ const TopUp = () => {
     }
   };
 
-  // 获取充值配置信息
+  const normalizePayMethods = (rawPayMethods, stripeMinTopUp) => {
+    let normalized = rawPayMethods || [];
+    if (typeof normalized === 'string') {
+      normalized = JSON.parse(normalized);
+    }
+    if (!Array.isArray(normalized)) {
+      return [];
+    }
+    return normalized
+      .filter((method) => method?.name && method?.type)
+      .map((method) => {
+        const minTopup = Number(method.min_topup);
+        const nextMethod = {
+          ...method,
+          min_topup: Number.isFinite(minTopup) ? minTopup : 0,
+        };
+        if (
+          nextMethod.type === 'stripe' &&
+          (!nextMethod.min_topup || nextMethod.min_topup <= 0)
+        ) {
+          const stripeMin = Number(stripeMinTopUp);
+          if (Number.isFinite(stripeMin)) {
+            nextMethod.min_topup = stripeMin;
+          }
+        }
+        if (!nextMethod.color) {
+          if (nextMethod.type === 'alipay') {
+            nextMethod.color = 'rgba(var(--semi-blue-5), 1)';
+          } else if (nextMethod.type === 'wxpay') {
+            nextMethod.color = 'rgba(var(--semi-green-5), 1)';
+          } else if (nextMethod.type === 'stripe') {
+            nextMethod.color = 'rgba(var(--semi-purple-5), 1)';
+          } else if (nextMethod.type === 'btcpay') {
+            nextMethod.color = 'rgba(var(--semi-orange-5), 1)';
+          } else if (nextMethod.type === 'bepusdt') {
+            nextMethod.color = 'rgba(var(--semi-cyan-5), 1)';
+          } else if (nextMethod.type === 'nowpayments') {
+            nextMethod.color = 'rgba(var(--semi-teal-5), 1)';
+          } else {
+            nextMethod.color = 'rgba(var(--semi-primary-5), 1)';
+          }
+        }
+        return nextMethod;
+      });
+  };
+
   const getTopupInfo = async () => {
     try {
       const res = await API.get('/api/user/topup/info');
-      const { message, data, success } = res.data;
-      if (success) {
-        setTopupInfo({
-          amount_options: data.amount_options || [],
-          discount: data.discount || {},
-        });
+      const { data, success } = res.data;
+      if (!success) {
+        return;
+      }
 
-        // 处理支付方式
-        let payMethods = data.pay_methods || [];
-        try {
-          if (typeof payMethods === 'string') {
-            payMethods = JSON.parse(payMethods);
-          }
-          if (payMethods && payMethods.length > 0) {
-            // 检查name和type是否为空
-            payMethods = payMethods.filter((method) => {
-              return method.name && method.type;
-            });
-            // 如果没有color，则设置默认颜色
-            payMethods = payMethods.map((method) => {
-              // 规范化最小充值数
-              const normalizedMinTopup = Number(method.min_topup);
-              method.min_topup = Number.isFinite(normalizedMinTopup)
-                ? normalizedMinTopup
-                : 0;
+      setTopupInfo({
+        amount_options: data.amount_options || [],
+        discount: data.discount || {},
+      });
 
-              // Stripe 的最小充值从后端字段回填
-              if (
-                method.type === 'stripe' &&
-                (!method.min_topup || method.min_topup <= 0)
-              ) {
-                const stripeMin = Number(data.stripe_min_topup);
-                if (Number.isFinite(stripeMin)) {
-                  method.min_topup = stripeMin;
-                }
-              }
+      try {
+        const normalizedPayMethods = normalizePayMethods(
+          data.pay_methods,
+          data.stripe_min_topup,
+        );
+        setPayMethods(normalizedPayMethods);
+      } catch (e) {
+        console.log('解析支付方式失败:', e);
+        setPayMethods([]);
+      }
 
-              if (!method.color) {
-                if (method.type === 'alipay') {
-                  method.color = 'rgba(var(--semi-blue-5), 1)';
-                } else if (method.type === 'wxpay') {
-                  method.color = 'rgba(var(--semi-green-5), 1)';
-                } else if (method.type === 'stripe') {
-                  method.color = 'rgba(var(--semi-purple-5), 1)';
-                } else {
-                  method.color = 'rgba(var(--semi-primary-5), 1)';
-                }
-              }
-              return method;
-            });
-          } else {
-            payMethods = [];
-          }
+      const nextEnableOnlineTopUp = data.enable_online_topup || false;
+      const nextEnableStripeTopUp = data.enable_stripe_topup || false;
+      const nextEnableCreemTopUp = data.enable_creem_topup || false;
+      const nextEnableBTCPayTopUp = data.enable_btcpay_topup || false;
+      const nextEnableBEpusdtTopUp = data.enable_bepusdt_topup || false;
+      const nextEnableNOWPaymentsTopUp =
+        data.enable_nowpayments_topup || false;
+      const incomingBEpusdtNetworks = Array.isArray(data.bepusdt_usdt_networks)
+        ? data.bepusdt_usdt_networks
+        : [];
+      const incomingNOWPaymentsModes =
+        data.nowpayments_modes || defaultNOWPaymentsModes;
+      const incomingNOWPaymentsNetworks = Array.isArray(
+        data.nowpayments_usdt_networks,
+      )
+        ? data.nowpayments_usdt_networks
+        : [];
+      const incomingNOWPaymentsCryptoAmountOptions =
+        Array.isArray(data.nowpayments_crypto_amount_options) &&
+        data.nowpayments_crypto_amount_options.length > 0
+          ? data.nowpayments_crypto_amount_options
+          : defaultNOWPaymentsCryptoAmountOptions;
 
-          // 如果启用了 Stripe 支付，添加到支付方法列表
-          // 这个逻辑现在由后端处理，如果 Stripe 启用，后端会在 pay_methods 中包含它
+      const defaultPricingMode =
+        incomingNOWPaymentsModes.crypto && !incomingNOWPaymentsModes.fiat
+          ? 'crypto'
+          : 'fiat';
+      const defaultBEpusdtTradeType = incomingBEpusdtNetworks[0]?.code || '';
+      const defaultPayCurrency = incomingNOWPaymentsNetworks[0]?.code || '';
+      const defaultCryptoAmount = incomingNOWPaymentsCryptoAmountOptions[0] || 5;
+      const nextMinTopUp =
+        nextEnableOnlineTopUp ||
+        nextEnableBTCPayTopUp ||
+        nextEnableBEpusdtTopUp ||
+        nextEnableNOWPaymentsTopUp
+          ? data.min_topup
+          : nextEnableStripeTopUp
+            ? data.stripe_min_topup
+            : 1;
 
-          setPayMethods(payMethods);
-          const enableStripeTopUp = data.enable_stripe_topup || false;
-          const enableOnlineTopUp = data.enable_online_topup || false;
-          const enableCreemTopUp = data.enable_creem_topup || false;
-          const minTopUpValue = enableOnlineTopUp
-            ? data.min_topup
-            : enableStripeTopUp
-              ? data.stripe_min_topup
-              : 1;
-          setEnableOnlineTopUp(enableOnlineTopUp);
-          setEnableStripeTopUp(enableStripeTopUp);
-          setEnableCreemTopUp(enableCreemTopUp);
-          setMinTopUp(minTopUpValue);
-          setTopUpCount(minTopUpValue);
+      setEnableOnlineTopUp(nextEnableOnlineTopUp);
+      setEnableStripeTopUp(nextEnableStripeTopUp);
+      setEnableCreemTopUp(nextEnableCreemTopUp);
+      setEnableBTCPayTopUp(nextEnableBTCPayTopUp);
+      setEnableBEpusdtTopUp(nextEnableBEpusdtTopUp);
+      setBEpusdtNetworks(incomingBEpusdtNetworks);
+      setBEpusdtTradeType(defaultBEpusdtTradeType);
+      setEnableNOWPaymentsTopUp(nextEnableNOWPaymentsTopUp);
+      setNowPaymentsModes(incomingNOWPaymentsModes);
+      setNowPaymentsPricingMode(defaultPricingMode);
+      setNowPaymentsNetworks(incomingNOWPaymentsNetworks);
+      setNowPaymentsPayCurrency(defaultPayCurrency);
+      setNowPaymentsCryptoAmountOptions(incomingNOWPaymentsCryptoAmountOptions);
+      setNowPaymentsCryptoAmount(defaultCryptoAmount);
+      setSelectedNowPaymentsCryptoAmount(defaultCryptoAmount);
+      setNowPaymentsQuote(null);
+      setMinTopUp(nextMinTopUp);
+      setTopUpCount(nextMinTopUp);
 
-          // 设置 Creem 产品
-          try {
-            console.log(' data is ?', data);
-            console.log(' creem products is ?', data.creem_products);
-            const products = JSON.parse(data.creem_products || '[]');
-            setCreemProducts(products);
-          } catch (e) {
-            setCreemProducts([]);
-          }
+      try {
+        const products = JSON.parse(data.creem_products || '[]');
+        setCreemProducts(products);
+      } catch (e) {
+        setCreemProducts([]);
+      }
 
-          // 如果没有自定义充值数量选项，根据最小充值金额生成预设充值额度选项
-          if (topupInfo.amount_options.length === 0) {
-            setPresetAmounts(generatePresetAmounts(minTopUpValue));
-          }
-
-          // 初始化显示实付金额
-          getAmount(minTopUpValue);
-        } catch (e) {
-          console.log('解析支付方式失败:', e);
-          setPayMethods([]);
-        }
-
-        // 如果有自定义充值数量选项，使用它们替换默认的预设选项
-        if (data.amount_options && data.amount_options.length > 0) {
-          const customPresets = data.amount_options.map((amount) => ({
-            value: amount,
-            discount: data.discount[amount] || 1.0,
-          }));
-          setPresetAmounts(customPresets);
-        }
+      if (Array.isArray(data.amount_options) && data.amount_options.length > 0) {
+        setPresetAmounts(
+          data.amount_options.map((item) => ({
+            value: item,
+            discount: data.discount?.[item] || 1.0,
+          })),
+        );
       } else {
-        console.error('获取充值配置失败:', data);
+        setPresetAmounts(generatePresetAmounts(nextMinTopUp));
+      }
+
+      if (nextEnableBEpusdtTopUp && !nextEnableOnlineTopUp && !nextEnableStripeTopUp && !nextEnableBTCPayTopUp && !nextEnableNOWPaymentsTopUp) {
+        setAmount(parseFloat(nextMinTopUp || 0));
+      } else {
+        getAmount(nextMinTopUp);
       }
     } catch (error) {
       console.error('获取充值配置异常:', error);
     }
   };
 
-  // 获取邀请链接
   const getAffLink = async () => {
     const res = await API.get('/api/user/aff');
     const { success, message, data } = res.data;
     if (success) {
-      let link = `${window.location.origin}/register?aff=${data}`;
-      setAffLink(link);
+      setAffLink(`${window.location.origin}/register?aff=${data}`);
     } else {
       showError(message);
     }
   };
 
-  // 划转邀请额度
   const transfer = async () => {
     if (transferAmount < getQuotaPerUnit()) {
       showError(t('划转金额最低为') + ' ' + renderQuota(getQuotaPerUnit()));
       return;
     }
-    const res = await API.post(`/api/user/aff_transfer`, {
+    const res = await API.post('/api/user/aff_transfer', {
       quota: transferAmount,
     });
     const { success, message } = res.data;
@@ -525,14 +675,12 @@ const TopUp = () => {
     }
   };
 
-  // 复制邀请链接
   const handleAffLinkClick = async () => {
     await copy(affLink);
     showSuccess(t('邀请链接已复制到剪切板'));
   };
 
   useEffect(() => {
-    // 始终获取最新用户数据，确保余额等统计信息准确
     getUserQuota().then();
     setTransferAmount(getQuotaPerUnit());
   }, []);
@@ -543,7 +691,6 @@ const TopUp = () => {
     getAffLink().then();
   }, []);
 
-  // 在 statusState 可用时获取充值信息
   useEffect(() => {
     getTopupInfo().then();
     getSubscriptionPlans().then();
@@ -552,28 +699,120 @@ const TopUp = () => {
 
   useEffect(() => {
     if (statusState?.status) {
-      // const minTopUpValue = statusState.status.min_topup || 1;
-      // setMinTopUp(minTopUpValue);
-      // setTopUpCount(minTopUpValue);
       setTopUpLink(statusState.status.top_up_link || '');
       setPriceRatio(statusState.status.price || 1);
-
       setStatusLoading(false);
     }
   }, [statusState?.status]);
 
+  useEffect(() => {
+    setNowPaymentsQuote(null);
+  }, [
+    nowPaymentsPricingMode,
+    nowPaymentsPayCurrency,
+    nowPaymentsCryptoAmount,
+    topUpCount,
+  ]);
+
+  const getNOWPaymentsNetworkName = () => {
+    const selectedNetwork = nowPaymentsNetworks.find(
+      (network) => network.code === nowPaymentsPayCurrency,
+    );
+    return selectedNetwork?.name || nowPaymentsPayCurrency?.toUpperCase() || '-';
+  };
+
+  const getNOWPaymentsDisplayCurrency = () => {
+    if (!nowPaymentsQuote) {
+      return 'USD';
+    }
+    const priceCurrency = String(nowPaymentsQuote.price_currency || '')
+      .trim()
+      .toLowerCase();
+    if (priceCurrency === 'usd') {
+      return 'USD';
+    }
+    if (priceCurrency === nowPaymentsPayCurrency) {
+      return getNOWPaymentsNetworkName();
+    }
+    return priceCurrency.toUpperCase();
+  };
+
   const renderAmount = () => {
+    if (payWay === 'nowpayments' && nowPaymentsQuote) {
+      return `${Number(nowPaymentsQuote.price_amount || 0).toFixed(2)} ${getNOWPaymentsDisplayCurrency()}`;
+    }
+    if (payWay === 'bepusdt' || isBEpusdtOnlyMode()) {
+      return `${Number(topUpCount || 0).toFixed(2)} RMB`;
+    }
     return amount + ' ' + t('元');
   };
 
-  const getAmount = async (value) => {
-    if (value === undefined) {
-      value = topUpCount;
+  const getBEpusdtNetworkName = () => {
+    const selectedNetwork = bepusdtNetworks.find(
+      (network) => network.code === bepusdtTradeType,
+    );
+    return selectedNetwork?.name || bepusdtTradeType || '-';
+  };
+
+  const getPaymentConfirmSummary = () => {
+    if (payWay === 'bepusdt') {
+      return {
+        countLabel: t('到账额度'),
+        countValue: `${Number(topUpCount || 0).toFixed(2)} USD`,
+        amountLabel: t('实付金额'),
+        amountValue: renderAmount(),
+        extraRows: [
+          {
+            label: t('支付网络'),
+            value: getBEpusdtNetworkName(),
+          },
+          {
+            label: t('到账规则'),
+            value: '1 RMB = 1 USD',
+          },
+        ],
+      };
     }
+    if (payWay !== 'nowpayments' || !nowPaymentsQuote) {
+      return null;
+    }
+    const creditAmount = Number(
+      nowPaymentsQuote.credit_amount || nowPaymentsQuote.price_amount || 0,
+    );
+    const summary = {
+      countLabel: t('到账额度'),
+      countValue: renderQuotaWithAmount(creditAmount),
+      amountLabel: t('实付金额'),
+      amountValue: renderAmount(),
+      extraRows: [
+        {
+          label: t('定价模式'),
+          value:
+            nowPaymentsPricingMode === 'crypto'
+              ? t('链上币定价')
+              : t('法币定价'),
+        },
+        {
+          label: t('支付网络'),
+          value: getNOWPaymentsNetworkName(),
+        },
+      ],
+    };
+    if (nowPaymentsPricingMode === 'crypto') {
+      summary.extraRows.push({
+        label: t('到账规则'),
+        value: t('按 1 USDT = 1 USD 等值到账'),
+      });
+    }
+    return summary;
+  };
+
+  const getAmount = async (value) => {
+    const nextValue = value === undefined ? topUpCount : value;
     setAmountLoading(true);
     try {
       const res = await API.post('/api/user/amount', {
-        amount: parseFloat(value),
+        amount: parseFloat(nextValue),
       });
       if (res !== undefined) {
         const { message, data } = res.data;
@@ -593,13 +832,11 @@ const TopUp = () => {
   };
 
   const getStripeAmount = async (value) => {
-    if (value === undefined) {
-      value = topUpCount;
-    }
+    const nextValue = value === undefined ? topUpCount : value;
     setAmountLoading(true);
     try {
       const res = await API.post('/api/user/stripe/amount', {
-        amount: parseFloat(value),
+        amount: parseFloat(nextValue),
       });
       if (res !== undefined) {
         const { message, data } = res.data;
@@ -640,33 +877,31 @@ const TopUp = () => {
     setSelectedCreemProduct(null);
   };
 
-  // 选择预设充值额度
   const selectPresetAmount = (preset) => {
     setTopUpCount(preset.value);
     setSelectedPreset(preset.value);
-
-    // 计算实际支付金额，考虑折扣
+    if (isBEpusdtOnlyMode()) {
+      setAmount(parseFloat(preset.value || 0));
+      return;
+    }
     const discount = preset.discount || topupInfo.discount[preset.value] || 1.0;
     const discountedAmount = preset.value * priceRatio * discount;
     setAmount(discountedAmount);
   };
 
-  // 格式化大数字显示
   const formatLargeNumber = (num) => {
     return num.toString();
   };
 
-  // 根据最小充值金额生成预设充值额度选项
-  const generatePresetAmounts = (minAmount) => {
+  const generatePresetAmounts = (minimumAmount) => {
     const multipliers = [1, 5, 10, 30, 50, 100, 300, 500];
     return multipliers.map((multiplier) => ({
-      value: minAmount * multiplier,
+      value: minimumAmount * multiplier,
     }));
   };
 
   return (
     <div className='w-full max-w-7xl mx-auto relative min-h-screen lg:min-h-0 mt-[60px] px-2'>
-      {/* 划转模态框 */}
       <TransferModal
         t={t}
         openTransfer={openTransfer}
@@ -679,7 +914,6 @@ const TopUp = () => {
         setTransferAmount={setTransferAmount}
       />
 
-      {/* 充值确认模态框 */}
       <PaymentConfirmModal
         t={t}
         open={open}
@@ -694,16 +928,15 @@ const TopUp = () => {
         payMethods={payMethods}
         amountNumber={amount}
         discountRate={topupInfo?.discount?.[topUpCount] || 1.0}
+        summary={getPaymentConfirmSummary()}
       />
 
-      {/* 充值账单模态框 */}
       <TopupHistoryModal
         visible={openHistory}
         onCancel={handleHistoryCancel}
         t={t}
       />
 
-      {/* Creem 充值确认模态框 */}
       <Modal
         title={t('确定要充值 $')}
         visible={creemOpen}
@@ -720,7 +953,8 @@ const TopUp = () => {
               {t('产品名称')}：{selectedCreemProduct.name}
             </p>
             <p>
-              {t('价格')}：{selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
+              {t('价格')}：
+              {selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
               {selectedCreemProduct.price}
             </p>
             <p>
@@ -731,12 +965,30 @@ const TopUp = () => {
         )}
       </Modal>
 
-      {/* 主布局区域 */}
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         <RechargeCard
           t={t}
           enableOnlineTopUp={enableOnlineTopUp}
           enableStripeTopUp={enableStripeTopUp}
+          enableBTCPayTopUp={enableBTCPayTopUp}
+          enableBEpusdtTopUp={enableBEpusdtTopUp}
+          bepusdtNetworks={bepusdtNetworks}
+          bepusdtTradeType={bepusdtTradeType}
+          setBEpusdtTradeType={setBEpusdtTradeType}
+          enableNOWPaymentsTopUp={enableNOWPaymentsTopUp}
+          nowPaymentsModes={nowPaymentsModes}
+          nowPaymentsPricingMode={nowPaymentsPricingMode}
+          setNowPaymentsPricingMode={setNowPaymentsPricingMode}
+          nowPaymentsNetworks={nowPaymentsNetworks}
+          nowPaymentsPayCurrency={nowPaymentsPayCurrency}
+          setNowPaymentsPayCurrency={setNowPaymentsPayCurrency}
+          nowPaymentsCryptoAmountOptions={nowPaymentsCryptoAmountOptions}
+          nowPaymentsCryptoAmount={nowPaymentsCryptoAmount}
+          setNowPaymentsCryptoAmount={setNowPaymentsCryptoAmount}
+          selectedNowPaymentsCryptoAmount={selectedNowPaymentsCryptoAmount}
+          setSelectedNowPaymentsCryptoAmount={
+            setSelectedNowPaymentsCryptoAmount
+          }
           enableCreemTopUp={enableCreemTopUp}
           creemProducts={creemProducts}
           creemPreTopUp={creemPreTopUp}
@@ -757,6 +1009,7 @@ const TopUp = () => {
           preTopUp={preTopUp}
           paymentLoading={paymentLoading}
           payWay={payWay}
+          isBEpusdtOnlyMode={isBEpusdtOnlyMode()}
           redemptionCode={redemptionCode}
           setRedemptionCode={setRedemptionCode}
           topUp={topUp}

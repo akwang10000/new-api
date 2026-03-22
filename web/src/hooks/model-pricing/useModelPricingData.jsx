@@ -55,6 +55,18 @@ export const useModelPricingData = () => {
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
 
+  const resolvePreferredGroup = (usableGroups, ratios) => {
+    const currentUserGroup = userState?.user?.group;
+    if (
+      currentUserGroup &&
+      usableGroups?.[currentUserGroup] !== undefined &&
+      ratios?.[currentUserGroup] !== undefined
+    ) {
+      return currentUserGroup;
+    }
+    return 'all';
+  };
+
   // 充值汇率（price）与美元兑人民币汇率（usd_exchange_rate）
   const priceRate = useMemo(
     () => statusState?.status?.price ?? 1,
@@ -242,7 +254,16 @@ export const useModelPricingData = () => {
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
-      setSelectedGroup('all');
+      setSelectedGroup((currentGroup) => {
+        if (
+          currentGroup !== 'all' &&
+          usable_group?.[currentGroup] !== undefined &&
+          group_ratio?.[currentGroup] !== undefined
+        ) {
+          return currentGroup;
+        }
+        return resolvePreferredGroup(usable_group, group_ratio);
+      });
       // 构建供应商 Map 方便查找
       const vendorMap = {};
       if (Array.isArray(vendors)) {
@@ -318,6 +339,15 @@ export const useModelPricingData = () => {
   useEffect(() => {
     refresh().then();
   }, []);
+
+  useEffect(() => {
+    setSelectedGroup((currentGroup) => {
+      if (currentGroup !== 'all') {
+        return currentGroup;
+      }
+      return resolvePreferredGroup(usableGroup, groupRatio);
+    });
+  }, [userState?.user?.group, usableGroup, groupRatio]);
 
   // 当筛选条件变化时重置到第一页
   useEffect(() => {

@@ -95,9 +95,13 @@ var defaultModelRatio = map[string]float64{
 	"gpt-5-2025-08-07":                 0.625, // $1.25 / 1M tokens
 	"gpt-5-chat-latest":                0.625, // $1.25 / 1M tokens
 	"gpt-5.4":                          1.25,  // $2.5 / 1M tokens
+	"gpt-5.4-2026-03-05":               1.25,  // $2.5 / 1M tokens
 	"openai/gpt-5.4":                   1.25,  // $2.5 / 1M tokens
+	"openai/gpt-5.4-2026-03-05":        1.25,  // $2.5 / 1M tokens
 	"gpt-5.4-pro":                      15.0,  // $30 / 1M tokens
+	"gpt-5.4-pro-2026-03-05":           15.0,  // $30 / 1M tokens
 	"openai/gpt-5.4-pro":               15.0,  // $30 / 1M tokens
+	"openai/gpt-5.4-pro-2026-03-05":    15.0,  // $30 / 1M tokens
 	"gpt-5-mini":                       0.125,
 	"gpt-5-mini-2025-08-07":            0.125,
 	"gpt-5-nano":                       0.025,

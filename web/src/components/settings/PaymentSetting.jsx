@@ -23,6 +23,9 @@ import SettingsGeneralPayment from '../../pages/Setting/Payment/SettingsGeneralP
 import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentGateway';
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe';
 import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem';
+import SettingsPaymentGatewayBTCPay from '../../pages/Setting/Payment/SettingsPaymentGatewayBTCPay';
+import SettingsPaymentGatewayBEpusdt from '../../pages/Setting/Payment/SettingsPaymentGatewayBEpusdt';
+import SettingsPaymentGatewayNOWPayments from '../../pages/Setting/Payment/SettingsPaymentGatewayNOWPayments';
 import { API, showError, toBoolean } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 
@@ -47,6 +50,27 @@ const PaymentSetting = () => {
     StripeUnitPrice: 8.0,
     StripeMinTopUp: 1,
     StripePromotionCodesEnabled: false,
+
+    BTCPayServerURL: '',
+    BTCPayStoreID: '',
+    BTCPayApiToken: '',
+    BTCPayWebhookSecret: '',
+    BTCPayEnabled: false,
+
+    BEpusdtBaseURL: '',
+    BEpusdtToken: '',
+    BEpusdtWebhookSecret: '',
+    BEpusdtEnabled: false,
+    BEpusdtUSDTNetworks: '[]',
+    BEpusdtOrderTimeout: 1800,
+
+    NOWPaymentsApiKey: '',
+    NOWPaymentsIPNSecret: '',
+    NOWPaymentsEnabled: false,
+    NOWPaymentsFiatModeEnabled: true,
+    NOWPaymentsCryptoModeEnabled: true,
+    NOWPaymentsUSDTNetworks: '[]',
+    NOWPaymentsCryptoAmountOptions: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -66,7 +90,7 @@ const PaymentSetting = () => {
                 2,
               );
             } catch (error) {
-              console.error('解析TopupGroupRatio出错:', error);
+              console.error('瑙ｆ瀽TopupGroupRatio鍑洪敊:', error);
               newInputs[item.key] = item.value;
             }
             break;
@@ -78,7 +102,7 @@ const PaymentSetting = () => {
                 2,
               );
             } catch (error) {
-              console.error('解析AmountOptions出错:', error);
+              console.error('瑙ｆ瀽AmountOptions鍑洪敊:', error);
               newInputs['AmountOptions'] = item.value;
             }
             break;
@@ -90,7 +114,7 @@ const PaymentSetting = () => {
                 2,
               );
             } catch (error) {
-              console.error('解析AmountDiscount出错:', error);
+              console.error('瑙ｆ瀽AmountDiscount鍑洪敊:', error);
               newInputs['AmountDiscount'] = item.value;
             }
             break;
@@ -98,7 +122,21 @@ const PaymentSetting = () => {
           case 'MinTopUp':
           case 'StripeUnitPrice':
           case 'StripeMinTopUp':
+          case 'BEpusdtOrderTimeout':
             newInputs[item.key] = parseFloat(item.value);
+            break;
+          case 'BEpusdtUSDTNetworks':
+          case 'NOWPaymentsUSDTNetworks':
+          case 'NOWPaymentsCryptoAmountOptions':
+            try {
+              newInputs[item.key] = JSON.stringify(
+                JSON.parse(item.value),
+                null,
+                2,
+              );
+            } catch (error) {
+              newInputs[item.key] = item.value;
+            }
             break;
           default:
             if (item.key.endsWith('Enabled')) {
@@ -121,7 +159,7 @@ const PaymentSetting = () => {
       setLoading(true);
       await getOptions();
     } catch (error) {
-      showError(t('刷新失败'));
+      showError(t('鍒锋柊澶辫触'));
     } finally {
       setLoading(false);
     }
@@ -145,6 +183,18 @@ const PaymentSetting = () => {
         </Card>
         <Card style={{ marginTop: '10px' }}>
           <SettingsPaymentGatewayCreem options={inputs} refresh={onRefresh} />
+        </Card>
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsPaymentGatewayBTCPay options={inputs} refresh={onRefresh} />
+        </Card>
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsPaymentGatewayBEpusdt options={inputs} refresh={onRefresh} />
+        </Card>
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsPaymentGatewayNOWPayments
+            options={inputs}
+            refresh={onRefresh}
+          />
         </Card>
       </Spin>
     </>
