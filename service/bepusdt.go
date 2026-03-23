@@ -60,8 +60,10 @@ type BEpusdtCreateTransactionResponse struct {
 }
 
 type BEpusdtQueryOrderResponse struct {
-	TradeID string
-	Status  int
+	TradeID   string
+	TradeHash string
+	ReturnURL string
+	Status    int
 }
 
 func ParseBEpusdtUSDTNetworks(raw string) ([]BEpusdtUSDTNetwork, error) {
@@ -116,7 +118,7 @@ func IsBEpusdtEnabled() bool {
 	return setting.BEpusdtEnabled &&
 		strings.TrimSpace(setting.BEpusdtBaseURL) != "" &&
 		strings.TrimSpace(setting.BEpusdtToken) != "" &&
-		strings.TrimSpace(setting.BEpusdtWebhookSecret) != "" &&
+		strings.TrimSpace(getBEpusdtWebhookSignSecret()) != "" &&
 		len(GetEnabledBEpusdtNetworks()) > 0
 }
 
@@ -174,8 +176,10 @@ func (c *BEpusdtClient) QueryOrder(tradeID string) (*BEpusdtQueryOrderResponse, 
 		return nil, err
 	}
 	return &BEpusdtQueryOrderResponse{
-		TradeID: remoteTradeID,
-		Status:  status,
+		TradeID:   remoteTradeID,
+		TradeHash: strings.TrimSpace(common.Interface2String(rawResp["trade_hash"])),
+		ReturnURL: strings.TrimSpace(common.Interface2String(rawResp["return_url"])),
+		Status:    status,
 	}, nil
 }
 
@@ -192,7 +196,7 @@ func CanonicalBEpusdtDecimal(value float64, scale int32) string {
 }
 
 func VerifyBEpusdtSignature(params map[string]string, signature string) bool {
-	token := strings.TrimSpace(setting.BEpusdtToken)
+	token := strings.TrimSpace(getBEpusdtWebhookSignSecret())
 	signature = strings.TrimSpace(signature)
 	if token == "" || signature == "" || len(params) == 0 {
 		return false
@@ -202,6 +206,13 @@ func VerifyBEpusdtSignature(params map[string]string, signature string) bool {
 		return false
 	}
 	return strings.EqualFold(expected, signature)
+}
+
+func getBEpusdtWebhookSignSecret() string {
+	if secret := strings.TrimSpace(setting.BEpusdtWebhookSecret); secret != "" {
+		return secret
+	}
+	return strings.TrimSpace(setting.BEpusdtToken)
 }
 
 func parseBEpusdtStatusCode(raw any) (int, error) {

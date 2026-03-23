@@ -30,7 +30,13 @@ import {
   Tooltip,
   Typography,
 } from '@douyinfe/semi-ui';
-import { API, showError, showSuccess, renderQuota } from '../../helpers';
+import {
+  API,
+  openPaymentCheckout,
+  renderQuota,
+  showError,
+  showSuccess,
+} from '../../helpers';
 import { getCurrencyConfig } from '../../helpers/render';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import SubscriptionPurchaseModal from './modals/SubscriptionPurchaseModal';
@@ -181,7 +187,11 @@ const SubscriptionPlansCard = ({
         payment_method: selectedEpayMethod,
       });
       if (res.data?.message === 'success') {
-        submitEpayForm({ url: res.data.url, params: res.data.data });
+        if (res.data?.data?.pay_link) {
+          openPaymentCheckout(res.data.data);
+        } else {
+          submitEpayForm({ url: res.data.url, params: res.data.data });
+        }
         showSuccess(t('已发起支付'));
         closeBuy();
       } else {

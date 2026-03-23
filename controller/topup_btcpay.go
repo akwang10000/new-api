@@ -131,11 +131,17 @@ func RequestBTCPayPay(c *gin.Context) {
 	})
 	if err != nil {
 		log.Printf("create btcpay invoice failed: trade_no=%s err=%v", referenceID, err)
+		if expireErr := model.ExpireTopUp(referenceID); expireErr != nil {
+			log.Printf("expire failed btcpay order failed: trade_no=%s err=%v", referenceID, expireErr)
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起 BTCPay 支付失败"})
 		return
 	}
 	if strings.TrimSpace(invoice.CheckoutLink) == "" {
 		log.Printf("btcpay invoice missing checkout link: trade_no=%s invoice_id=%s", referenceID, invoice.ID)
+		if expireErr := model.ExpireTopUp(referenceID); expireErr != nil {
+			log.Printf("expire missing-link btcpay order failed: trade_no=%s err=%v", referenceID, expireErr)
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "BTCPay 支付链接不存在"})
 		return
 	}

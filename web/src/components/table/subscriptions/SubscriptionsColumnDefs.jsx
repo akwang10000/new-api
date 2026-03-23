@@ -221,7 +221,7 @@ const renderPaymentConfig = (text, record, t, enableEpay) => {
       )}
       {hasEpay && (
         <Tag color='light-green' shape='circle'>
-          {t('易支付')}
+          {t('MotionPay')}
         </Tag>
       )}
     </Space>

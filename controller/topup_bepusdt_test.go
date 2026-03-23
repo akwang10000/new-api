@@ -5,7 +5,6 @@ import (
 
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
-	"github.com/QuantumNous/new-api/setting"
 )
 
 func TestGetExpectedBEpusdtCallbackAmount(t *testing.T) {
@@ -28,12 +27,14 @@ func TestValidateBEpusdtCallbackUsesCNYAmount(t *testing.T) {
 	}
 
 	err := validateBEpusdtCallback(topUp, map[string]string{
-		"order_id":   "ref_123",
-		"amount":     "1",
-		"trade_id":   "trade_123",
-		"trade_type": "usdt.trc20",
-		"fiat":       "CNY",
-		"status":     "2",
+		"order_id":      "ref_123",
+		"amount":        "1",
+		"actual_amount": "0.15",
+		"token":         "TFWSj5fS6mqxnBFFxGD1YvPJ8uwc7zSr4L",
+		"trade_id":      "trade_123",
+		"trade_type":    "usdt.trc20",
+		"fiat":          "CNY",
+		"status":        "2",
 	}, &service.BEpusdtQueryOrderResponse{
 		TradeID: "trade_123",
 		Status:  2,
@@ -52,11 +53,13 @@ func TestValidateBEpusdtCallbackRejectsTradeTypeMismatch(t *testing.T) {
 	}
 
 	err := validateBEpusdtCallback(topUp, map[string]string{
-		"order_id":   "ref_123",
-		"amount":     "1",
-		"trade_id":   "trade_123",
-		"trade_type": "usdt.erc20",
-		"status":     "2",
+		"order_id":      "ref_123",
+		"amount":        "1",
+		"actual_amount": "0.15",
+		"token":         "TFWSj5fS6mqxnBFFxGD1YvPJ8uwc7zSr4L",
+		"trade_id":      "trade_123",
+		"trade_type":    "usdt.erc20",
+		"status":        "2",
 	}, &service.BEpusdtQueryOrderResponse{
 		TradeID: "trade_123",
 		Status:  2,
@@ -67,17 +70,11 @@ func TestValidateBEpusdtCallbackRejectsTradeTypeMismatch(t *testing.T) {
 }
 
 func TestGetBEpusdtNotifyURL(t *testing.T) {
-	originalSecret := setting.BEpusdtWebhookSecret
-	setting.BEpusdtWebhookSecret = "secret-value"
-	t.Cleanup(func() {
-		setting.BEpusdtWebhookSecret = originalSecret
-	})
-
 	got, err := getBEpusdtNotifyURL("https://robot2.indevs.in")
 	if err != nil {
 		t.Fatalf("getBEpusdtNotifyURL returned error: %v", err)
 	}
-	want := "https://robot2.indevs.in/api/bepusdt/webhook?s=secret-value"
+	want := "https://robot2.indevs.in/api/bepusdt/webhook"
 	if got != want {
 		t.Fatalf("unexpected notify url: got %s want %s", got, want)
 	}

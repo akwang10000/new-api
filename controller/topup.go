@@ -3,13 +3,14 @@ package controller
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
@@ -22,9 +23,33 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func filterVisiblePayMethods(payMethods []map[string]string, enableOnlineTopUp bool) []map[string]string {
+	if len(payMethods) == 0 {
+		return payMethods
+	}
+
+	filtered := make([]map[string]string, 0, len(payMethods))
+	for _, method := range payMethods {
+		methodType := strings.TrimSpace(method["type"])
+		if methodType == "" {
+			continue
+		}
+		switch methodType {
+		case "stripe", PaymentMethodBTCPay, PaymentMethodBEpusdt, PaymentMethodNOWPayments:
+			filtered = append(filtered, method)
+		default:
+			if enableOnlineTopUp {
+				filtered = append(filtered, method)
+			}
+		}
+	}
+	return filtered
+}
+
 func GetTopUpInfo(c *gin.Context) {
 	// 获取支付方式
-	payMethods := operation_setting.PayMethods
+	enableOnlineTopUp := operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != ""
+	payMethods := filterVisiblePayMethods(operation_setting.PayMethods, enableOnlineTopUp)
 	enableStripeTopUp := setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != ""
 	enableBTCPayTopUp := service.IsBTCPayEnabled()
 	enableBEpusdtTopUp := service.IsBEpusdtEnabled()
@@ -110,7 +135,7 @@ func GetTopUpInfo(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"enable_online_topup":               operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != "",
+		"enable_online_topup":               enableOnlineTopUp,
 		"enable_stripe_topup":               enableStripeTopUp,
 		"enable_creem_topup":                setting.CreemApiKey != "" && setting.CreemProducts != "[]",
 		"enable_btcpay_topup":               enableBTCPayTopUp,
@@ -270,19 +295,6 @@ func RequestEpay(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})
 		return
 	}
-	uri, params, err := client.Purchase(&epay.PurchaseArgs{
-		Type:           req.PaymentMethod,
-		ServiceTradeNo: tradeNo,
-		Name:           fmt.Sprintf("TUC%d", req.Amount),
-		Money:          strconv.FormatFloat(payMoney, 'f', 2, 64),
-		Device:         epay.PC,
-		NotifyUrl:      notifyUrl,
-		ReturnUrl:      returnUrl,
-	})
-	if err != nil {
-		c.JSON(200, gin.H{"message": "error", "data": "拉起支付失败"})
-		return
-	}
 	amount := req.Amount
 	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
 		dAmount := decimal.NewFromInt(int64(amount))
@@ -303,7 +315,38 @@ func RequestEpay(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "error", "data": "创建订单失败"})
 		return
 	}
-	c.JSON(200, gin.H{"message": "success", "data": params, "url": uri})
+	checkout, err := CreateEpayCheckout(c, &epay.PurchaseArgs{
+		Type:           req.PaymentMethod,
+		ServiceTradeNo: tradeNo,
+		Name:           fmt.Sprintf("TUC%d", req.Amount),
+		Money:          strconv.FormatFloat(payMoney, 'f', 2, 64),
+		Device:         epay.PC,
+		NotifyUrl:      notifyUrl,
+		ReturnUrl:      returnUrl,
+	})
+	if err != nil {
+		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+			log.Printf("expire failed epay order failed: trade_no=%s err=%v", tradeNo, expireErr)
+		}
+		c.JSON(200, gin.H{"message": "error", "data": err.Error()})
+		return
+	}
+	if checkout.PayLink != "" {
+		c.JSON(200, gin.H{
+			"message": "success",
+			"data": buildEpayCheckoutPayload(checkout, gin.H{
+				"trade_no":             tradeNo,
+				"subject":              "钱包充值",
+				"payment_method":       req.PaymentMethod,
+				"payment_method_label": getEpayMethodDisplayName(req.PaymentMethod),
+				"pay_amount":           strconv.FormatFloat(payMoney, 'f', 2, 64),
+				"pay_currency":         "CNY",
+				"recharge_amount":      req.Amount,
+			}),
+		})
+		return
+	}
+	c.JSON(200, gin.H{"message": "success", "data": checkout.Params, "url": checkout.URL})
 }
 
 // tradeNo lock
@@ -335,6 +378,100 @@ func UnlockOrder(tradeNo string) {
 
 func EpayNotify(c *gin.Context) {
 	var params map[string]string
+
+	if c.Request.Method == http.MethodPost {
+		if err := c.Request.ParseForm(); err != nil {
+			log.Println("epay notify parse form failed:", err)
+			_, _ = c.Writer.Write([]byte("fail"))
+			return
+		}
+		params = lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, _ int) map[string]string {
+			r[t] = c.Request.PostForm.Get(t)
+			return r
+		}, map[string]string{})
+	} else {
+		params = lo.Reduce(lo.Keys(c.Request.URL.Query()), func(r map[string]string, t string, _ int) map[string]string {
+			r[t] = c.Request.URL.Query().Get(t)
+			return r
+		}, map[string]string{})
+	}
+
+	if len(params) == 0 {
+		log.Println("epay notify params are empty")
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	epayClient := GetEpayClient()
+	if epayClient == nil {
+		log.Println("epay notify missing payment config")
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	verifiedInfo, err := epayClient.Verify(params)
+	if err != nil || verifiedInfo == nil || !verifiedInfo.VerifyStatus {
+		log.Println("epay notify signature verification failed")
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	if verifiedInfo.TradeStatus != epay.StatusTradeSuccess {
+		log.Printf("ignore epay notify with non-success trade status: %+v", verifiedInfo)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	LockOrder(verifiedInfo.ServiceTradeNo)
+	defer UnlockOrder(verifiedInfo.ServiceTradeNo)
+
+	existingTopUp := model.GetTopUpByTradeNo(verifiedInfo.ServiceTradeNo)
+	if existingTopUp == nil {
+		log.Printf("epay notify top-up not found: %+v", verifiedInfo)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+	if existingTopUp.Status == common.TopUpStatusSuccess {
+		_, _ = c.Writer.Write([]byte("success"))
+		return
+	}
+	if existingTopUp.Status != common.TopUpStatusPending {
+		log.Printf("epay notify ignore non-pending order: trade_no=%s status=%s", verifiedInfo.ServiceTradeNo, existingTopUp.Status)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	if strings.TrimSpace(verifiedInfo.Type) != "" && !strings.EqualFold(strings.TrimSpace(verifiedInfo.Type), strings.TrimSpace(existingTopUp.PaymentMethod)) {
+		log.Printf("epay notify payment method mismatch: trade_no=%s expected=%s actual=%s", verifiedInfo.ServiceTradeNo, existingTopUp.PaymentMethod, verifiedInfo.Type)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	paidMoney, err := decimal.NewFromString(strings.TrimSpace(verifiedInfo.Money))
+	if err != nil {
+		log.Printf("epay notify invalid money: trade_no=%s money=%q err=%v", verifiedInfo.ServiceTradeNo, verifiedInfo.Money, err)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+	expectedMoney := decimal.NewFromFloat(existingTopUp.Money).Round(2)
+	if !paidMoney.Round(2).Equal(expectedMoney) {
+		log.Printf("epay notify money mismatch: trade_no=%s expected=%s actual=%s", verifiedInfo.ServiceTradeNo, expectedMoney.StringFixed(2), paidMoney.Round(2).StringFixed(2))
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	if err = model.CompleteTopUpByRequestedAmount(verifiedInfo.ServiceTradeNo); err != nil {
+		log.Printf("epay notify complete top-up failed: trade_no=%s err=%v", verifiedInfo.ServiceTradeNo, err)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+
+	log.Printf("epay top-up completed: trade_no=%s gateway_trade_no=%s", verifiedInfo.ServiceTradeNo, verifiedInfo.TradeNo)
+	_, _ = c.Writer.Write([]byte("success"))
+	return
+}
+
+/*
 
 	if c.Request.Method == "POST" {
 		// POST 请求：从 POST body 解析参数
@@ -417,6 +554,7 @@ func EpayNotify(c *gin.Context) {
 		log.Printf("易支付异常回调: %v", verifyInfo)
 	}
 }
+*/
 
 func RequestAmount(c *gin.Context) {
 	var req AmountRequest

@@ -215,7 +215,7 @@ const SubscriptionPurchaseModal = ({
                 </div>
               )}
 
-              {/* 易支付 */}
+              {/* MotionPay */}
               {hasEpay && (
                 <div className='flex gap-2'>
                   <Select
@@ -237,7 +237,7 @@ const SubscriptionPurchaseModal = ({
                     loading={paying}
                     disabled={!selectedEpayMethod || purchaseLimitReached}
                   >
-                    {t('支付')}
+                    {t('使用 MotionPay 支付')}
                   </Button>
                 </div>
               )}

@@ -26,6 +26,7 @@ import {
   renderQuotaWithAmount,
   showError,
   showInfo,
+  openPaymentCheckout,
   showSuccess,
 } from '../../helpers';
 import { Modal, Toast } from '@douyinfe/semi-ui';
@@ -79,8 +80,7 @@ const TopUp = () => {
   const [nowPaymentsModes, setNowPaymentsModes] = useState(
     defaultNOWPaymentsModes,
   );
-  const [nowPaymentsPricingMode, setNowPaymentsPricingMode] =
-    useState('fiat');
+  const [nowPaymentsPricingMode, setNowPaymentsPricingMode] = useState('fiat');
   const [nowPaymentsNetworks, setNowPaymentsNetworks] = useState([]);
   const [nowPaymentsPayCurrency, setNowPaymentsPayCurrency] = useState('');
   const [nowPaymentsCryptoAmountOptions, setNowPaymentsCryptoAmountOptions] =
@@ -339,13 +339,8 @@ const TopUp = () => {
       if (res !== undefined) {
         const { message, data } = res.data;
         if (message === 'success') {
-          if (
-            payWay === 'stripe' ||
-            payWay === 'btcpay' ||
-            payWay === 'bepusdt' ||
-            payWay === 'nowpayments'
-          ) {
-            window.open(data.pay_link, '_blank');
+          if (data?.pay_link) {
+            openPaymentCheckout(data);
           } else {
             const params = data;
             const url = res.data.url;
@@ -565,8 +560,7 @@ const TopUp = () => {
       const nextEnableCreemTopUp = data.enable_creem_topup || false;
       const nextEnableBTCPayTopUp = data.enable_btcpay_topup || false;
       const nextEnableBEpusdtTopUp = data.enable_bepusdt_topup || false;
-      const nextEnableNOWPaymentsTopUp =
-        data.enable_nowpayments_topup || false;
+      const nextEnableNOWPaymentsTopUp = data.enable_nowpayments_topup || false;
       const incomingBEpusdtNetworks = Array.isArray(data.bepusdt_usdt_networks)
         ? data.bepusdt_usdt_networks
         : [];
@@ -589,7 +583,8 @@ const TopUp = () => {
           : 'fiat';
       const defaultBEpusdtTradeType = incomingBEpusdtNetworks[0]?.code || '';
       const defaultPayCurrency = incomingNOWPaymentsNetworks[0]?.code || '';
-      const defaultCryptoAmount = incomingNOWPaymentsCryptoAmountOptions[0] || 5;
+      const defaultCryptoAmount =
+        incomingNOWPaymentsCryptoAmountOptions[0] || 5;
       const nextMinTopUp =
         nextEnableOnlineTopUp ||
         nextEnableBTCPayTopUp ||
@@ -626,7 +621,10 @@ const TopUp = () => {
         setCreemProducts([]);
       }
 
-      if (Array.isArray(data.amount_options) && data.amount_options.length > 0) {
+      if (
+        Array.isArray(data.amount_options) &&
+        data.amount_options.length > 0
+      ) {
         setPresetAmounts(
           data.amount_options.map((item) => ({
             value: item,
@@ -637,7 +635,13 @@ const TopUp = () => {
         setPresetAmounts(generatePresetAmounts(nextMinTopUp));
       }
 
-      if (nextEnableBEpusdtTopUp && !nextEnableOnlineTopUp && !nextEnableStripeTopUp && !nextEnableBTCPayTopUp && !nextEnableNOWPaymentsTopUp) {
+      if (
+        nextEnableBEpusdtTopUp &&
+        !nextEnableOnlineTopUp &&
+        !nextEnableStripeTopUp &&
+        !nextEnableBTCPayTopUp &&
+        !nextEnableNOWPaymentsTopUp
+      ) {
         setAmount(parseFloat(nextMinTopUp || 0));
       } else {
         getAmount(nextMinTopUp);
@@ -718,7 +722,9 @@ const TopUp = () => {
     const selectedNetwork = nowPaymentsNetworks.find(
       (network) => network.code === nowPaymentsPayCurrency,
     );
-    return selectedNetwork?.name || nowPaymentsPayCurrency?.toUpperCase() || '-';
+    return (
+      selectedNetwork?.name || nowPaymentsPayCurrency?.toUpperCase() || '-'
+    );
   };
 
   const getNOWPaymentsDisplayCurrency = () => {
@@ -953,8 +959,7 @@ const TopUp = () => {
               {t('产品名称')}：{selectedCreemProduct.name}
             </p>
             <p>
-              {t('价格')}：
-              {selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
+              {t('价格')}：{selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
               {selectedCreemProduct.price}
             </p>
             <p>

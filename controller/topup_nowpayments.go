@@ -142,11 +142,17 @@ func RequestNOWPaymentsPay(c *gin.Context) {
 	})
 	if err != nil {
 		log.Printf("create nowpayments invoice failed: trade_no=%s err=%v", tradeNo, err)
+		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+			log.Printf("expire failed nowpayments order failed: trade_no=%s err=%v", tradeNo, expireErr)
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起 NOWPayments 支付失败"})
 		return
 	}
 	if strings.TrimSpace(invoice.InvoiceURL) == "" {
 		log.Printf("nowpayments invoice missing invoice_url: trade_no=%s invoice_id=%v", tradeNo, invoice.ID)
+		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+			log.Printf("expire missing-link nowpayments order failed: trade_no=%s err=%v", tradeNo, expireErr)
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "NOWPayments 支付链接不存在"})
 		return
 	}

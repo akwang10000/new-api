@@ -10,9 +10,12 @@ import (
 
 func TestVerifyBEpusdtSignature(t *testing.T) {
 	originalToken := setting.BEpusdtToken
+	originalSecret := setting.BEpusdtWebhookSecret
 	setting.BEpusdtToken = "test-token"
+	setting.BEpusdtWebhookSecret = "test-secret"
 	t.Cleanup(func() {
 		setting.BEpusdtToken = originalToken
+		setting.BEpusdtWebhookSecret = originalSecret
 	})
 
 	params := map[string]string{
@@ -20,7 +23,7 @@ func TestVerifyBEpusdtSignature(t *testing.T) {
 		"amount":   "12.34",
 		"status":   "2",
 	}
-	signature := SignBEpusdtParams(params)
+	signature := signBEpusdtParamsWithToken(params, setting.BEpusdtWebhookSecret)
 	if signature == "" {
 		t.Fatal("expected signature to be generated")
 	}

@@ -204,8 +204,8 @@ export default function SettingsPaymentGatewayBEpusdt(props) {
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
               <Form.Input
                 field='BEpusdtWebhookSecret'
-                label={t('Webhook 密钥')}
-                placeholder={t('独立回调密钥，敏感信息不显示')}
+                label={t('兼容保留密钥')}
+                placeholder={t('当前回调已改为签名校验，这个字段可留空')}
                 type='password'
               />
             </Col>

@@ -51,7 +51,7 @@ const PAYMENT_METHOD_MAP = {
   stripe: 'Stripe',
   creem: 'Creem',
   alipay: '支付宝',
-  wxpay: '微信',
+  wxpay: '微信支付',
   btcpay: 'BTCPay',
 };
 
@@ -85,7 +85,7 @@ const getNOWPaymentsLabel = (paymentMethod) => {
   if (!network) {
     return 'NOWPayments';
   }
-  return `NOWPayments · ${NOWPAYMENTS_NETWORK_MAP[network] || network.toUpperCase()}`;
+  return `NOWPayments / ${NOWPAYMENTS_NETWORK_MAP[network] || network.toUpperCase()}`;
 };
 
 const getBEpusdtLabel = (paymentMethod) => {
@@ -96,7 +96,7 @@ const getBEpusdtLabel = (paymentMethod) => {
   if (!network) {
     return '虚拟货币支付';
   }
-  return `虚拟货币支付 · ${BEPUSDT_NETWORK_MAP[network] || network.toUpperCase()}`;
+  return `虚拟货币支付 / ${BEPUSDT_NETWORK_MAP[network] || network.toUpperCase()}`;
 };
 
 const TopupHistoryModal = ({ visible, onCancel, t }) => {
@@ -189,6 +189,11 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     return Number(record?.amount || 0) === 0 && tradeNo.startsWith('sub');
   };
 
+  const allowManualCompletion = (paymentMethod) => {
+    const normalized = String(paymentMethod || '').trim().toLowerCase();
+    return ['alipay', 'wxpay', 'qqpay'].includes(normalized);
+  };
+
   const renderAmountCell = (topupAmount, record) => {
     if (isSubscriptionTopup(record)) {
       return (
@@ -201,9 +206,9 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     if (isBEpusdtPayment(record?.payment_method)) {
       return (
         <div className='flex flex-col'>
-          <Text>{`¥${Number(topupAmount || 0).toFixed(2)}`}</Text>
+          <Text>{`RMB ${Number(topupAmount || 0).toFixed(2)}`}</Text>
           <Text type='tertiary' size='small'>
-            {t('实付金额（人民币）')}
+            {t('实际支付金额（人民币）')}
           </Text>
         </div>
       );
@@ -273,7 +278,12 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         title: t('操作'),
         key: 'action',
         render: (_, record) => {
-          if (record.status !== 'pending') return null;
+          if (
+            record.status !== 'pending' ||
+            !allowManualCompletion(record.payment_method)
+          ) {
+            return null;
+          }
           return (
             <Button
               size='small'

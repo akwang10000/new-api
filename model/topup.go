@@ -128,6 +128,60 @@ func Recharge(referenceId string, customerId string) (err error) {
 	return CompleteTopUpByMoney(referenceId, updateFields)
 }
 
+func CompleteTopUpByRequestedAmount(referenceId string) error {
+	if referenceId == "" {
+		return errors.New("missing payment reference id")
+	}
+
+	refCol := "`trade_no`"
+	if common.UsingPostgreSQL {
+		refCol = `"trade_no"`
+	}
+
+	topUp := &TopUp{}
+	quotaToAdd := 0
+
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", referenceId).First(topUp).Error; err != nil {
+			return errors.New("top-up order does not exist")
+		}
+
+		if topUp.Status == common.TopUpStatusSuccess {
+			return nil
+		}
+		if topUp.Status != common.TopUpStatusPending {
+			return errors.New("top-up order is not pending")
+		}
+		if topUp.Amount <= 0 {
+			return errors.New("invalid top-up amount")
+		}
+
+		quotaToAdd = int(decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).IntPart())
+		if quotaToAdd <= 0 {
+			return errors.New("invalid top-up quota")
+		}
+
+		topUp.CompleteTime = common.GetTimestamp()
+		topUp.Status = common.TopUpStatusSuccess
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		common.SysError("topup by amount failed: " + err.Error())
+		return errors.New("top-up failed, please retry later")
+	}
+
+	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("online top-up succeeded, quota added: %s, payment amount: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money))
+	return nil
+}
+
 func GetUserTopUps(userId int, pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
 	// Start transaction
 	tx := DB.Begin()
@@ -289,8 +343,8 @@ func ManualCompleteTopUp(tradeNo string) error {
 		if topUp.Status != common.TopUpStatusPending {
 			return errors.New("订单状态不是待支付，无法补单")
 		}
-		if isBEpusdtPaymentMethod(topUp.PaymentMethod) {
-			return errors.New("BEpusdt 订单必须通过支付回调完成，禁止手动补单")
+		if !isManualTopUpPaymentMethod(topUp.PaymentMethod) {
+			return errors.New("this payment order must be completed by the payment gateway callback")
 		}
 		if err := validateMoneyBasedTopUpInvariant(topUp); err != nil {
 			return err
@@ -340,6 +394,15 @@ func ManualCompleteTopUp(tradeNo string) error {
 func isMoneyBasedTopUpPaymentMethod(paymentMethod string) bool {
 	paymentMethod = strings.ToLower(strings.TrimSpace(paymentMethod))
 	return paymentMethod == "stripe" || paymentMethod == "btcpay" || strings.HasPrefix(paymentMethod, "nowpayments_") || strings.HasPrefix(paymentMethod, "bepusdt_")
+}
+
+func isManualTopUpPaymentMethod(paymentMethod string) bool {
+	switch strings.ToLower(strings.TrimSpace(paymentMethod)) {
+	case "alipay", "wxpay", "qqpay":
+		return true
+	default:
+		return false
+	}
 }
 
 func isBEpusdtPaymentMethod(paymentMethod string) bool {

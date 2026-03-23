@@ -26,7 +26,6 @@ const (
 	paymentMethodBEpusdtPrefix = "bepusdt_"
 	bepusdtMaxTopup            = 10000
 	bepusdtWebhookMaxBody      = 1 << 20
-	bepusdtWebhookSecretParam  = "s"
 )
 
 type BEpusdtPayRequest struct {
@@ -177,12 +176,6 @@ func RequestBEpusdtPay(c *gin.Context) {
 }
 
 func BEpusdtWebhook(c *gin.Context) {
-	if !verifyBEpusdtWebhookSecret(c.Query(bepusdtWebhookSecretParam)) {
-		log.Printf("bepusdt webhook secret verify failed")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
 	body, err := io.ReadAll(io.LimitReader(c.Request.Body, bepusdtWebhookMaxBody+1))
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -358,12 +351,21 @@ func validateBEpusdtCallback(topUp *model.TopUp, params map[string]string, remot
 	if remoteOrder == nil {
 		return fmt.Errorf("remote order is nil")
 	}
+	if remoteOrder.Status <= 0 {
+		return fmt.Errorf("invalid remote status")
+	}
 	callbackTradeID := strings.TrimSpace(params["trade_id"])
 	if callbackTradeID == "" {
 		return fmt.Errorf("missing trade_id")
 	}
 	if !strings.EqualFold(remoteOrder.TradeID, callbackTradeID) {
 		return fmt.Errorf("trade_id mismatch")
+	}
+	if actualAmount := strings.TrimSpace(params["actual_amount"]); actualAmount == "" {
+		return fmt.Errorf("missing actual_amount")
+	}
+	if token := strings.TrimSpace(params["token"]); token == "" {
+		return fmt.Errorf("missing token")
 	}
 	if tradeType := strings.TrimSpace(params["trade_type"]); tradeType != "" {
 		if normalizeBEpusdtTradeType(tradeType) != getBEpusdtTradeTypeFromPaymentMethod(topUp.PaymentMethod) {
@@ -430,20 +432,9 @@ func getBEpusdtLaunchErrorMessage(err error) string {
 }
 
 func getBEpusdtNotifyURL(callbackAddress string) (string, error) {
-	webhookSecret := strings.TrimSpace(setting.BEpusdtWebhookSecret)
-	if webhookSecret == "" {
-		return "", fmt.Errorf("BEpusdt webhook secret is not configured")
-	}
 	notifyURL, err := url.Parse(strings.TrimRight(callbackAddress, "/") + "/api/bepusdt/webhook")
 	if err != nil {
 		return "", fmt.Errorf("failed to build BEpusdt webhook URL")
 	}
-	query := notifyURL.Query()
-	query.Set(bepusdtWebhookSecretParam, webhookSecret)
-	notifyURL.RawQuery = query.Encode()
 	return notifyURL.String(), nil
-}
-
-func verifyBEpusdtWebhookSecret(secret string) bool {
-	return strings.TrimSpace(secret) != "" && strings.TrimSpace(secret) == strings.TrimSpace(setting.BEpusdtWebhookSecret)
 }
