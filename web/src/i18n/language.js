@@ -17,14 +17,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export const supportedLanguages = [
-  'zh-CN',
-  'zh-TW',
-  'en',
-  'fr',
-  'ru',
-  'ja',
-  'vi',
+export const defaultLanguage = 'en';
+
+// Keep frontend options aligned with the languages fully supported end-to-end.
+export const supportedLanguages = ['zh-CN', 'zh-TW', 'en'];
+
+export const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'zh-CN', label: '简体中文' },
+  { value: 'zh-TW', label: '繁體中文' },
 ];
 
 export const normalizeLanguage = (language) => {
@@ -57,5 +58,5 @@ export const normalizeLanguage = (language) => {
     (supportedLanguage) => supportedLanguage.toLowerCase() === lower,
   );
 
-  return matchedLanguage || normalized;
+  return matchedLanguage || defaultLanguage;
 };

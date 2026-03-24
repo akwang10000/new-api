@@ -36,6 +36,8 @@ import { API_ENDPOINTS } from '../../constants/common.constant';
 import { StatusContext } from '../../context/Status';
 import { UserContext } from '../../context/User';
 import { useActualTheme } from '../../context/Theme';
+import LanguageSelector from '../../components/layout/headerbar/LanguageSelector';
+import { useLanguagePreference } from '../../hooks/common/useLanguagePreference';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { useNavigation } from '../../hooks/common/useNavigation';
 import NoticeModal from '../../components/layout/NoticeModal';
@@ -96,6 +98,7 @@ const Home = () => {
   const [statusState] = useContext(StatusContext);
   const actualTheme = useActualTheme();
   const isMobile = useIsMobile();
+  const { currentLang, handleLanguageChange } = useLanguagePreference();
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
@@ -280,29 +283,44 @@ const Home = () => {
   };
 
   const renderTopActions = () => {
+    const languageSelector = (
+      <LanguageSelector
+        currentLang={currentLang}
+        onLanguageChange={handleLanguageChange}
+        t={t}
+        menuClassName='home-landing__language-menu'
+        buttonClassName='home-landing__language-button'
+      />
+    );
+
     if (userState?.user) {
       return (
-        <Link to='/console/personal' className='home-landing__profile'>
-          <Avatar
-            size='small'
-            color={stringToColor(userState.user.username || 'U')}
-          >
-            {(userState.user.username || 'U')[0].toUpperCase()}
-          </Avatar>
-          <div className='home-landing__profile-meta'>
-            <span className='home-landing__profile-name'>
-              {userState.user.username}
-            </span>
-            <span className='home-landing__profile-role'>
-              {profileSubtitle}
-            </span>
-          </div>
-        </Link>
+        <div className='home-landing__action-group'>
+          {languageSelector}
+          <Link to='/console/personal' className='home-landing__profile'>
+            <Avatar
+              size='small'
+              color={stringToColor(userState.user.username || 'U')}
+            >
+              {(userState.user.username || 'U')[0].toUpperCase()}
+            </Avatar>
+            <div className='home-landing__profile-meta'>
+              <span className='home-landing__profile-name'>
+                {userState.user.username}
+              </span>
+              <span className='home-landing__profile-role'>
+                {profileSubtitle}
+              </span>
+            </div>
+          </Link>
+        </div>
       );
     }
 
     return (
-      <div className='home-landing__auth-actions'>
+      <div className='home-landing__action-group'>
+        {languageSelector}
+        <div className='home-landing__auth-actions'>
         <Link to='/login'>
           <Button
             theme='borderless'
@@ -322,6 +340,7 @@ const Home = () => {
             </Button>
           </Link>
         )}
+        </div>
       </div>
     );
   };
@@ -370,6 +389,18 @@ const Home = () => {
         onClose={() => setNoticeVisible(false)}
         isMobile={isMobile}
       />
+
+      {!showLandingPage && (
+        <div className='home-language-floating'>
+          <LanguageSelector
+            currentLang={currentLang}
+            onLanguageChange={handleLanguageChange}
+            t={t}
+            menuClassName='home-landing__language-menu'
+            buttonClassName='home-landing__language-button'
+          />
+        </div>
+      )}
 
       {showLandingPage ? (
         <div className='home-landing'>

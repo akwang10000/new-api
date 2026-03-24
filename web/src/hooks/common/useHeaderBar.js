@@ -24,21 +24,21 @@ import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import { useSetTheme, useTheme, useActualTheme } from '../../context/Theme';
 import { getLogo, getSystemName, API, showSuccess } from '../../helpers';
-import { normalizeLanguage } from '../../i18n/language';
 import { useIsMobile } from './useIsMobile';
 import { useSidebarCollapsed } from './useSidebarCollapsed';
 import { useMinimumLoadingTime } from './useMinimumLoadingTime';
+import { useLanguagePreference } from './useLanguagePreference';
 
 export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState] = useContext(StatusContext);
   const isMobile = useIsMobile();
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [logoLoaded, setLogoLoaded] = useState(false);
   const navigate = useNavigate();
-  const [currentLang, setCurrentLang] = useState(normalizeLanguage(i18n.language));
   const location = useLocation();
+  const { currentLang, handleLanguageChange } = useLanguagePreference();
 
   const loading = statusState?.status === undefined;
   const isLoading = useMinimumLoadingTime(loading, 200);
@@ -52,40 +52,36 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const docsLink = statusState?.status?.docs_link || '';
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
 
-  // 获取顶栏模块配置
   const headerNavModulesConfig = statusState?.status?.HeaderNavModules;
 
-  // 使用useMemo确保headerNavModules正确响应statusState变化
   const headerNavModules = useMemo(() => {
     if (headerNavModulesConfig) {
       try {
         const modules = JSON.parse(headerNavModulesConfig);
 
-        // 处理向后兼容性：如果pricing是boolean，转换为对象格式
         if (typeof modules.pricing === 'boolean') {
           modules.pricing = {
             enabled: modules.pricing,
-            requireAuth: false, // 默认不需要登录鉴权
+            requireAuth: false,
           };
         }
 
         return modules;
       } catch (error) {
-        console.error('解析顶栏模块配置失败:', error);
+        console.error('Failed to parse header modules config:', error);
         return null;
       }
     }
     return null;
   }, [headerNavModulesConfig]);
 
-  // 获取模型广场权限配置
   const pricingRequireAuth = useMemo(() => {
     if (headerNavModules?.pricing) {
       return typeof headerNavModules.pricing === 'object'
         ? headerNavModules.pricing.requireAuth
-        : false; // 默认不需要登录
+        : false;
     }
-    return false; // 默认不需要登录
+    return false;
   }, [headerNavModules]);
 
   const isConsoleRoute = location.pathname.startsWith('/console');
@@ -94,7 +90,6 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const actualTheme = useActualTheme();
   const setTheme = useSetTheme();
 
-  // Logo loading effect
   useEffect(() => {
     setLogoLoaded(false);
     if (!logo) return;
@@ -103,7 +98,6 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     img.onload = () => setLogoLoaded(true);
   }, [logo]);
 
-  // Send theme to iframe
   useEffect(() => {
     try {
       const iframe = document.querySelector('iframe');
@@ -112,33 +106,10 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
         cw.postMessage({ themeMode: actualTheme }, '*');
       }
     } catch (e) {
-      // Silently ignore cross-origin or access errors
+      // Silently ignore cross-origin or access errors.
     }
   }, [actualTheme]);
 
-  // Language change effect
-  useEffect(() => {
-    const handleLanguageChanged = (lng) => {
-      const normalizedLang = normalizeLanguage(lng);
-      setCurrentLang(normalizedLang);
-      try {
-        const iframe = document.querySelector('iframe');
-        const cw = iframe && iframe.contentWindow;
-        if (cw) {
-          cw.postMessage({ lang: normalizedLang }, '*');
-        }
-      } catch (e) {
-        // Silently ignore cross-origin or access errors
-      }
-    };
-
-    i18n.on('languageChanged', handleLanguageChanged);
-    return () => {
-      i18n.off('languageChanged', handleLanguageChanged);
-    };
-  }, [i18n]);
-
-  // Actions
   const logout = useCallback(async () => {
     await API.get('/api/user/logout');
     showSuccess(t('注销成功!'));
@@ -146,55 +117,6 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     localStorage.removeItem('user');
     navigate('/login');
   }, [navigate, t, userDispatch]);
-
-  const handleLanguageChange = useCallback(
-    async (lang) => {
-      // Change language immediately for responsive UX
-      const previousLang = normalizeLanguage(i18n.language);
-      i18n.changeLanguage(lang);
-      localStorage.setItem('i18nextLng', lang);
-
-      // If user is logged in, save preference to backend
-      if (userState?.user?.id) {
-        try {
-          const res = await API.put('/api/user/self', {
-            language: lang,
-          });
-          if (res.data.success) {
-            // Keep user preference and local cache in sync so route changes
-            // don't reapply an older remembered language.
-            let settings = {};
-            if (userState?.user?.setting) {
-              try {
-                settings = JSON.parse(userState.user.setting) || {};
-              } catch (e) {
-                settings = {};
-              }
-            }
-
-            settings.language = lang;
-            const nextUser = {
-              ...userState.user,
-              setting: JSON.stringify(settings),
-            };
-
-            userDispatch({
-              type: 'login',
-              payload: nextUser,
-            });
-            localStorage.setItem('user', JSON.stringify(nextUser));
-          }
-        } catch (error) {
-          if (previousLang) {
-            i18n.changeLanguage(previousLang);
-            localStorage.setItem('i18nextLng', previousLang);
-          }
-          console.error('Failed to save language preference:', error);
-        }
-      }
-    },
-    [i18n, userState, userDispatch],
-  );
 
   const handleThemeToggle = useCallback(
     (newTheme) => {
@@ -218,7 +140,6 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   }, [isMobile, onMobileMenuToggle, toggleCollapsed]);
 
   return {
-    // State
     userState,
     statusState,
     isMobile,
@@ -238,8 +159,6 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     drawerOpen,
     headerNavModules,
     pricingRequireAuth,
-
-    // Actions
     logout,
     handleLanguageChange,
     handleThemeToggle,

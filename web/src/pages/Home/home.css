@@ -192,6 +192,12 @@
   min-width: 180px;
 }
 
+.home-landing__action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .home-landing__auth-actions {
   display: flex;
   align-items: center;
@@ -341,6 +347,22 @@
   box-shadow: 0 14px 32px rgba(0, 243, 255, 0.22);
 }
 
+.home-landing__language-menu {
+  background: rgba(2, 10, 18, 0.95) !important;
+  border-color: rgba(0, 243, 255, 0.14) !important;
+}
+
+.home-landing__language-button {
+  border: 1px solid rgba(0, 243, 255, 0.18) !important;
+  background: rgba(2, 16, 26, 0.42) !important;
+  color: #eefcff !important;
+}
+
+.home-landing__language-button:hover,
+.home-landing__language-button:focus {
+  background: rgba(6, 28, 40, 0.72) !important;
+}
+
 .home-landing__copy-button {
   min-width: 124px;
   border-radius: 16px !important;
@@ -438,6 +460,13 @@
   text-transform: uppercase;
 }
 
+.home-language-floating {
+  position: fixed;
+  top: 18px;
+  right: 20px;
+  z-index: 12;
+}
+
 @media (max-width: 1200px) {
   .home-landing__providers {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -495,6 +524,11 @@
 
   .home-landing__header-actions {
     margin-left: auto;
+  }
+
+  .home-language-floating {
+    top: 14px;
+    right: 14px;
   }
 
   .home-landing__profile-meta {
