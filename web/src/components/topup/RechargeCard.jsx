@@ -324,7 +324,7 @@ const RechargeCard = ({
                 </Form.Slot>
               )}
               {enableBEpusdtTopUp && (
-                <Form.Slot label={t('虚拟货币支付')}>
+                <Form.Slot>
                   <Space vertical style={{ width: '100%' }}>
                     <Text type='tertiary'>
                       {t('请选择你希望用户支付的 USDT 网络')}
