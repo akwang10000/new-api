@@ -25,16 +25,29 @@ import {
 } from './utils';
 import axios from 'axios';
 import { MESSAGE_ROLES } from '../constants/playground.constants';
+import { defaultLanguage, normalizeLanguage } from '../i18n/language';
 
-export let API = axios.create({
-  baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
-    ? import.meta.env.VITE_REACT_APP_SERVER_URL
-    : '',
-  headers: {
-    'New-API-User': getUserIdFromLocalStorage(),
-    'Cache-Control': 'no-store',
-  },
-});
+const getPreferredLanguage = () => {
+  if (typeof window === 'undefined') {
+    return defaultLanguage;
+  }
+
+  return normalizeLanguage(window.localStorage.getItem('i18nextLng'));
+};
+
+const createAPIInstance = () =>
+  axios.create({
+    baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
+      ? import.meta.env.VITE_REACT_APP_SERVER_URL
+      : '',
+    headers: {
+      'New-API-User': getUserIdFromLocalStorage(),
+      'Cache-Control': 'no-store',
+      'Accept-Language': getPreferredLanguage(),
+    },
+  });
+
+export let API = createAPIInstance();
 
 function patchAPIInstance(instance) {
   const originalGet = instance.get.bind(instance);
@@ -67,15 +80,7 @@ function patchAPIInstance(instance) {
 patchAPIInstance(API);
 
 export function updateAPI() {
-  API = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
-      ? import.meta.env.VITE_REACT_APP_SERVER_URL
-      : '',
-    headers: {
-      'New-API-User': getUserIdFromLocalStorage(),
-      'Cache-Control': 'no-store',
-    },
-  });
+  API = createAPIInstance();
 
   patchAPIInstance(API);
 }

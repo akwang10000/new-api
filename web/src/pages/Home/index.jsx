@@ -155,9 +155,12 @@ const Home = () => {
     userState?.user?.role >= 10 ? t('管理员') : t('控制台');
   const currentYear = new Date().getFullYear();
   const showLandingPage = homePageContentLoaded && homePageContent === '';
+  const homePageContentCacheKey = `home_page_content:${i18n.language}`;
+  const noticeCloseDateKey = `notice_close_date:${i18n.language}`;
 
   const displayHomePageContent = async () => {
-    setHomePageContent(localStorage.getItem('home_page_content') || '');
+    setHomePageContentLoaded(false);
+    setHomePageContent(localStorage.getItem(homePageContentCacheKey) || '');
 
     try {
       const res = await API.get('/api/home_page_content');
@@ -175,7 +178,7 @@ const Home = () => {
       }
 
       setHomePageContent(content);
-      localStorage.setItem('home_page_content', content);
+      localStorage.setItem(homePageContentCacheKey, content);
 
       if (data.startsWith('https://')) {
         const iframe = document.querySelector('iframe');
@@ -203,7 +206,7 @@ const Home = () => {
 
   useEffect(() => {
     const checkNoticeAndShow = async () => {
-      const lastCloseDate = localStorage.getItem('notice_close_date');
+      const lastCloseDate = localStorage.getItem(noticeCloseDateKey);
       const today = new Date().toDateString();
       if (lastCloseDate === today) {
         return;
@@ -221,11 +224,11 @@ const Home = () => {
     };
 
     checkNoticeAndShow();
-  }, []);
+  }, [noticeCloseDateKey]);
 
   useEffect(() => {
     displayHomePageContent().then();
-  }, []);
+  }, [homePageContentCacheKey]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -501,7 +504,7 @@ const Home = () => {
           </section>
 
           <footer className='home-landing__footer'>
-            © {currentYear} {systemName}
+            {t('版权所有')} {currentYear} {systemName}
           </footer>
         </div>
       ) : (

@@ -2,21 +2,24 @@ import React from 'react';
 import { Button, Card, Divider, Typography } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslation } from 'react-i18next';
 import { copy, loadPaymentCheckout, showError, showSuccess } from '../helpers';
 
 const { Title, Text } = Typography;
 
-function getQRCodeTitle(paymentMethodLabel, content) {
+function getQRCodeTitle(paymentMethodLabel, content, t) {
   if (paymentMethodLabel) {
-    return `${paymentMethodLabel} 扫码支付`;
+    return t('{{paymentMethodLabel}} 扫码支付', {
+      paymentMethodLabel,
+    });
   }
   if (content.includes('qr.alipay.com') || content.includes('alipays://')) {
-    return '支付宝扫码支付';
+    return t('支付宝扫码支付');
   }
   if (content.includes('weixin://')) {
-    return '微信扫码支付';
+    return t('微信扫码支付');
   }
-  return '请使用手机扫码支付';
+  return t('请使用手机扫码支付');
 }
 
 function renderPayAmount(payAmount, payCurrency) {
@@ -27,7 +30,7 @@ function renderPayAmount(payAmount, payCurrency) {
     return payAmount;
   }
   if (payCurrency === 'CNY') {
-    return `￥${payAmount}`;
+    return `¥${payAmount}`;
   }
   return `${payAmount} ${payCurrency}`;
 }
@@ -47,12 +50,12 @@ function InfoRow({ label, value, mono = false }) {
 }
 
 const PaymentQRCode = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const search = new URLSearchParams(location.search);
   const checkoutId = String(search.get('checkout_id') || '').trim();
   const storedCheckout = loadPaymentCheckout(checkoutId) || {};
 
-  // Keep backward compatibility for old links that still use query params.
   const content = String(
     storedCheckout?.qr_content ||
       storedCheckout?.pay_link ||
@@ -82,15 +85,22 @@ const PaymentQRCode = () => {
       search.get('payment_method_label') ||
       '',
   ).trim();
-  const title = getQRCodeTitle(paymentMethodLabel, content || payLink);
+  const localizedPaymentMethodLabel = paymentMethodLabel
+    ? t(paymentMethodLabel)
+    : '';
+  const title = getQRCodeTitle(
+    localizedPaymentMethodLabel,
+    content || payLink,
+    t,
+  );
 
   const copyContent = async () => {
     const ok = await copy(content || payLink);
     if (ok) {
-      showSuccess('支付链接已复制');
+      showSuccess(t('支付链接已复制'));
       return;
     }
-    showError('复制支付链接失败');
+    showError(t('复制支付链接失败'));
   };
 
   return (
@@ -105,15 +115,18 @@ const PaymentQRCode = () => {
             <div className='w-full rounded-xl bg-slate-50 p-4'>
               <div className='space-y-3'>
                 <InfoRow
-                  label='应付金额'
+                  label={t('应付金额')}
                   value={renderPayAmount(payAmount, payCurrency)}
                 />
-                <InfoRow label='支付方式' value={paymentMethodLabel || '-'} />
-                <InfoRow label='用途' value={subject || '在线支付'} />
+                <InfoRow
+                  label={t('支付方式')}
+                  value={localizedPaymentMethodLabel || '-'}
+                />
+                <InfoRow label={t('用途')} value={subject || t('在线支付')} />
                 {rechargeAmount ? (
-                  <InfoRow label='充值面额' value={rechargeAmount} />
+                  <InfoRow label={t('充值面额')} value={rechargeAmount} />
                 ) : null}
-                <InfoRow label='订单号' value={tradeNo} mono />
+                <InfoRow label={t('订单号')} value={tradeNo} mono />
               </div>
             </div>
 
@@ -125,12 +138,14 @@ const PaymentQRCode = () => {
                   <QRCodeSVG value={content} size={240} includeMargin />
                 </div>
                 <Text type='secondary'>
-                  请使用手机钱包扫码完成支付，支付成功后返回原页面刷新即可查看状态。
+                  {t(
+                    '请使用手机钱包扫码完成支付，支付成功后返回原页面刷新即可查看状态。',
+                  )}
                 </Text>
               </>
             ) : (
               <Text type='danger'>
-                缺少支付二维码内容，请重新发起订单。
+                {t('缺少支付二维码内容，请重新发起订单。')}
               </Text>
             )}
 
@@ -142,7 +157,7 @@ const PaymentQRCode = () => {
                 onClick={copyContent}
                 disabled={!content && !payLink}
               >
-                复制支付链接
+                {t('复制支付链接')}
               </Button>
               <Button
                 block
@@ -153,7 +168,7 @@ const PaymentQRCode = () => {
                 }}
                 disabled={!payLink}
               >
-                打开原始链接
+                {t('打开原始链接')}
               </Button>
             </div>
           </div>

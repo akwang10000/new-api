@@ -43,7 +43,7 @@ const NoticeModal = ({
   defaultTab = 'inApp',
   unreadKeys = [],
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [noticeContent, setNoticeContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -78,7 +78,7 @@ const NoticeModal = ({
 
   const handleCloseTodayNotice = () => {
     const today = new Date().toDateString();
-    localStorage.setItem('notice_close_date', today);
+    localStorage.setItem(`notice_close_date:${i18n.language}`, today);
     onClose();
   };
 
@@ -108,7 +108,7 @@ const NoticeModal = ({
     if (visible) {
       displayNotice();
     }
-  }, [visible]);
+  }, [i18n.language, visible]);
 
   useEffect(() => {
     if (visible) {

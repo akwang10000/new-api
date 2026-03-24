@@ -13,38 +13,33 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
 */
-import { API, showError, showSuccess } from '../../helpers';
-import {
-  Button,
-  Card,
-  Divider,
-  Form,
-  Input,
-  Typography,
-} from '@douyinfe/semi-ui';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Button, Card, Divider, Form, Typography } from '@douyinfe/semi-ui';
+import { API, showError, showSuccess } from '../../helpers';
 
 const { Title, Text, Paragraph } = Typography;
 
 const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
 
   const handleSubmit = async () => {
     if (!verificationCode) {
-      showError('请输入验证码');
+      showError(t('请输入验证码'));
       return;
     }
-    // Validate code format
+
     if (useBackupCode && verificationCode.length !== 8) {
-      showError('备用码必须是8位');
+      showError(t('备用码必须是8位'));
       return;
-    } else if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
-      showError('验证码必须是6位数字');
+    }
+
+    if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
+      showError(t('验证码必须是6位数字'));
       return;
     }
 
@@ -55,8 +50,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
       });
 
       if (res.data.success) {
-        showSuccess('登录成功');
-        // 保存用户信息到本地存储
+        showSuccess(t('登录成功！'));
         localStorage.setItem('user', JSON.stringify(res.data.data));
         if (onSuccess) {
           onSuccess(res.data.data);
@@ -65,7 +59,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         showError(res.data.message);
       }
     } catch (error) {
-      showError('验证失败，请重试');
+      showError(t('验证失败，请重试'));
     } finally {
       setLoading(false);
     }
@@ -77,74 +71,89 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
     }
   };
 
+  const renderTips = () => (
+    <Text size='small' type='secondary'>
+      <strong>{t('提示：')}</strong>
+      <br />
+      {t('验证码每30秒更新一次')}
+      <br />
+      {t('如果无法获取验证码，请使用备用码')}
+      <br />
+      {t('每个备用码只能使用一次')}
+    </Text>
+  );
+
+  const renderForm = () => (
+    <Form onSubmit={handleSubmit}>
+      <Form.Input
+        field='code'
+        label={useBackupCode ? t('备用码') : t('验证码')}
+        placeholder={
+          useBackupCode ? t('请输入8位备用码') : t('请输入6位验证码')
+        }
+        value={verificationCode}
+        onChange={setVerificationCode}
+        onKeyPress={handleKeyPress}
+        size='large'
+        style={{ marginBottom: 16 }}
+        autoFocus
+      />
+
+      <Button
+        htmlType='submit'
+        type='primary'
+        loading={loading}
+        block
+        size='large'
+        style={{ marginBottom: 16 }}
+      >
+        {t('验证并登录')}
+      </Button>
+    </Form>
+  );
+
+  const renderActions = () => (
+    <div style={{ textAlign: 'center' }}>
+      <Button
+        theme='borderless'
+        type='tertiary'
+        onClick={() => {
+          setUseBackupCode(!useBackupCode);
+          setVerificationCode('');
+        }}
+        style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
+      >
+        {useBackupCode ? t('使用认证器验证码') : t('使用备用码')}
+      </Button>
+
+      {onBack && (
+        <Button
+          theme='borderless'
+          type='tertiary'
+          onClick={onBack}
+          style={{ color: '#1890ff', padding: 0 }}
+        >
+          {t('返回登录')}
+        </Button>
+      )}
+    </div>
+  );
+
   if (isModal) {
     return (
       <div className='space-y-4'>
         <Paragraph className='text-gray-600 dark:text-gray-300'>
-          请输入认证器应用显示的验证码完成登录
+          {t('请输入认证器应用显示的验证码完成登录')}
         </Paragraph>
 
-        <Form onSubmit={handleSubmit}>
-          <Form.Input
-            field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
-            value={verificationCode}
-            onChange={setVerificationCode}
-            onKeyPress={handleKeyPress}
-            size='large'
-            style={{ marginBottom: 16 }}
-            autoFocus
-          />
-
-          <Button
-            htmlType='submit'
-            type='primary'
-            loading={loading}
-            block
-            size='large'
-            style={{ marginBottom: 16 }}
-          >
-            验证并登录
-          </Button>
-        </Form>
+        {renderForm()}
 
         <Divider />
 
-        <div style={{ textAlign: 'center' }}>
-          <Button
-            theme='borderless'
-            type='tertiary'
-            onClick={() => {
-              setUseBackupCode(!useBackupCode);
-              setVerificationCode('');
-            }}
-            style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
-          >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
-          </Button>
-
-          {onBack && (
-            <Button
-              theme='borderless'
-              type='tertiary'
-              onClick={onBack}
-              style={{ color: '#1890ff', padding: 0 }}
-            >
-              返回登录
-            </Button>
-          )}
-        </div>
+        {renderActions()}
 
         <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-3'>
-          <Text size='small' type='secondary'>
-            <strong>提示：</strong>
-            <br />
-            • 验证码每30秒更新一次
-            <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
-          </Text>
+          {renderTips()}
         </div>
       </div>
     );
@@ -161,63 +170,17 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
     >
       <Card style={{ width: 400, padding: 24 }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title heading={3}>两步验证</Title>
+          <Title heading={3}>{t('两步验证')}</Title>
           <Paragraph type='secondary'>
-            请输入认证器应用显示的验证码完成登录
+            {t('请输入认证器应用显示的验证码完成登录')}
           </Paragraph>
         </div>
 
-        <Form onSubmit={handleSubmit}>
-          <Form.Input
-            field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
-            value={verificationCode}
-            onChange={setVerificationCode}
-            onKeyPress={handleKeyPress}
-            size='large'
-            style={{ marginBottom: 16 }}
-            autoFocus
-          />
-
-          <Button
-            htmlType='submit'
-            type='primary'
-            loading={loading}
-            block
-            size='large'
-            style={{ marginBottom: 16 }}
-          >
-            验证并登录
-          </Button>
-        </Form>
+        {renderForm()}
 
         <Divider />
 
-        <div style={{ textAlign: 'center' }}>
-          <Button
-            theme='borderless'
-            type='tertiary'
-            onClick={() => {
-              setUseBackupCode(!useBackupCode);
-              setVerificationCode('');
-            }}
-            style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
-          >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
-          </Button>
-
-          {onBack && (
-            <Button
-              theme='borderless'
-              type='tertiary'
-              onClick={onBack}
-              style={{ color: '#1890ff', padding: 0 }}
-            >
-              返回登录
-            </Button>
-          )}
-        </div>
+        {renderActions()}
 
         <div
           style={{
@@ -227,14 +190,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             borderRadius: 6,
           }}
         >
-          <Text size='small' type='secondary'>
-            <strong>提示：</strong>
-            <br />
-            • 验证码每30秒更新一次
-            <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
-          </Text>
+          {renderTips()}
         </div>
       </Card>
     </div>

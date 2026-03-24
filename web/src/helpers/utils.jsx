@@ -27,6 +27,7 @@ import {
 } from '../constants/playground.constants';
 import { TABLE_COMPACT_MODES_KEY } from '../constants';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile';
+import { defaultLanguage, normalizeLanguage } from '../i18n/language';
 
 const HTMLToastContent = ({ htmlContent }) => {
   return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
@@ -66,7 +67,14 @@ export function getUserIdFromLocalStorage() {
 }
 
 export function getFooterHTML() {
-  return localStorage.getItem('footer_html');
+  const currentLanguage = normalizeLanguage(
+    localStorage.getItem('i18nextLng'),
+  ) || defaultLanguage;
+
+  return (
+    localStorage.getItem(`footer_html:${currentLanguage}`) ||
+    localStorage.getItem('footer_html')
+  );
 }
 
 export async function copy(text) {

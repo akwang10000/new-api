@@ -269,7 +269,7 @@ const RechargeCard = ({
                 <Form.Slot label={t('NOWPayments')}>
                   <Space vertical style={{ width: '100%' }}>
                     <Text type='tertiary'>
-                      请输入人民币金额，到账按 1 RMB = 1 USD 计算
+                      {t('请输入人民币金额，到账按 1 RMB = 1 USD 计算')}
                     </Text>
                     <div className='flex flex-wrap gap-2'>
                       {nowPaymentsModes?.fiat && (
@@ -501,7 +501,7 @@ const RechargeCard = ({
                                 }
                                 className='!rounded-lg !px-4 !py-2'
                               >
-                                {payMethod.name}
+                                {t(payMethod.name)}
                               </Button>
                             );
 
@@ -552,7 +552,7 @@ const RechargeCard = ({
                                 fontWeight: 'normal',
                               }}
                             >
-                              (1 RMB = 1 USD)
+                              {t('(1 RMB = 1 USD)')}
                             </span>
                           );
                         }

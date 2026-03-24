@@ -20,7 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../../context/User';
-import { API } from '../../helpers';
+import { API, updateAPI } from '../../helpers';
 import { defaultLanguage, normalizeLanguage } from '../../i18n/language';
 
 export const useLanguagePreference = () => {
@@ -58,6 +58,7 @@ export const useLanguagePreference = () => {
 
       i18n.changeLanguage(normalizedLang);
       localStorage.setItem('i18nextLng', normalizedLang);
+      updateAPI();
 
       if (userState?.user?.id) {
         try {
@@ -89,6 +90,7 @@ export const useLanguagePreference = () => {
         } catch (error) {
           i18n.changeLanguage(previousLang);
           localStorage.setItem('i18nextLng', previousLang);
+          updateAPI();
           console.error('Failed to save language preference:', error);
         }
       }

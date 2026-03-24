@@ -103,7 +103,6 @@ const PageLayout = () => {
 
   useEffect(() => {
     loadUser();
-    loadStatus().catch(console.error);
     let systemName = getSystemName();
     if (systemName) {
       document.title = systemName;
@@ -116,6 +115,10 @@ const PageLayout = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    loadStatus().catch(console.error);
+  }, [i18n.language]);
 
   useEffect(() => {
     let preferredLang;

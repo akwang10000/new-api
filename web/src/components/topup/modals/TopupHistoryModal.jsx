@@ -88,15 +88,17 @@ const getNOWPaymentsLabel = (paymentMethod) => {
   return `NOWPayments / ${NOWPAYMENTS_NETWORK_MAP[network] || network.toUpperCase()}`;
 };
 
-const getBEpusdtLabel = (paymentMethod) => {
+const getBEpusdtLabel = (paymentMethod, t) => {
   const network = String(paymentMethod || '')
     .replace(/^bepusdt_/, '')
     .trim()
     .toLowerCase();
   if (!network) {
-    return '虚拟货币支付';
+    return t('虚拟货币支付');
   }
-  return `虚拟货币支付 / ${BEPUSDT_NETWORK_MAP[network] || network.toUpperCase()}`;
+  return `${t('虚拟货币支付')} / ${
+    BEPUSDT_NETWORK_MAP[network] || network.toUpperCase()
+  }`;
 };
 
 const TopupHistoryModal = ({ visible, onCancel, t }) => {
@@ -175,7 +177,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
 
   const renderPaymentMethod = (paymentMethod) => {
     if (isBEpusdtPayment(paymentMethod)) {
-      return <Text>{getBEpusdtLabel(paymentMethod)}</Text>;
+      return <Text>{getBEpusdtLabel(paymentMethod, t)}</Text>;
     }
     if (isNOWPaymentsPayment(paymentMethod)) {
       return <Text>{getNOWPaymentsLabel(paymentMethod)}</Text>;
