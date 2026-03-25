@@ -54,6 +54,18 @@ import {
 import NeuronField from './NeuronField';
 import './home.css';
 
+const DEFAULT_DOCS_LINK = '/docs-home.html?v=20260325-220151';
+
+const normalizeDocsLink = (docsLink) => {
+  if (!docsLink) {
+    return DEFAULT_DOCS_LINK;
+  }
+  if (docsLink.startsWith('/docs-home.html') && !docsLink.includes('?')) {
+    return `${docsLink}?v=20260325-220151`;
+  }
+  return docsLink;
+};
+
 const { Text } = Typography;
 
 const PROVIDERS = [
@@ -107,6 +119,7 @@ const Home = () => {
   const logo = getLogo();
   const systemName = getSystemName();
   const docsLink = statusState?.status?.docs_link || '';
+  const resolvedDocsLink = normalizeDocsLink(docsLink);
   const serverAddress =
     statusState?.status?.server_address || `${window.location.origin}`;
   const isSelfUseMode = statusState?.status?.self_use_mode_enabled || false;
@@ -141,7 +154,11 @@ const Home = () => {
       : false;
   }, [headerNavModules]);
 
-  const { mainNavLinks } = useNavigation(t, docsLink, headerNavModules);
+  const { mainNavLinks } = useNavigation(
+    t,
+    resolvedDocsLink,
+    headerNavModules,
+  );
 
   const endpointPath = API_ENDPOINTS[endpointIndex] || API_ENDPOINTS[0];
   const normalizedServerAddress = serverAddress.endsWith('/')
@@ -286,6 +303,17 @@ const Home = () => {
   };
 
   const renderTopActions = () => {
+    const docsButton = resolvedDocsLink ? (
+      <a href={resolvedDocsLink} target='_blank' rel='noreferrer'>
+        <Button
+          theme='borderless'
+          className='home-landing__ghost-button home-landing__header-button'
+        >
+          {t('文档')}
+        </Button>
+      </a>
+    ) : null;
+
     const languageSelector = (
       <LanguageSelector
         currentLang={currentLang}
@@ -300,6 +328,7 @@ const Home = () => {
       return (
         <div className='home-landing__action-group'>
           {languageSelector}
+          {docsButton}
           <Link to='/console/personal' className='home-landing__profile'>
             <Avatar
               size='small'
@@ -323,6 +352,7 @@ const Home = () => {
     return (
       <div className='home-landing__action-group'>
         {languageSelector}
+        {docsButton}
         <div className='home-landing__auth-actions'>
         <Link to='/login'>
           <Button
@@ -354,9 +384,9 @@ const Home = () => {
       (link) => link.itemKey === 'pricing',
     );
 
-    if (docsLink && hasDocsNav) {
+    if (resolvedDocsLink && hasDocsNav) {
       return (
-        <a href={docsLink} target='_blank' rel='noreferrer'>
+        <a href={resolvedDocsLink} target='_blank' rel='noreferrer'>
           <Button
             icon={<IconFile />}
             className='home-landing__secondary-action'
@@ -435,19 +465,19 @@ const Home = () => {
 
           <main className='home-landing__hero'>
             <div className='home-landing__badge'>
-              {t('企业级高可用模型分发网络')}
+              一体化 AI 网关与模型接入
             </div>
 
             <h1 className='home-landing__title'>
-              <span>{t('统一的')}</span>
+              <span>连接你的</span>
               <span className='home-landing__title-gradient'>
-                {t('大模型接口网关')}
+                AI 模型统一入口
               </span>
             </h1>
 
             <Text className='home-landing__description'>
               {t(
-                '聚合主流模型供应商，提供极速、稳定且高性价比的 API 中转服务。只需替换 Base URL，即可无缝接入全球顶级 AI 能力。',
+                '一个支持多模型、多供应商与统一计费的 API 网关，帮助你把 OpenAI 兼容接入、模型路由和额度管理收敛到同一套系统中。',
               )}
             </Text>
 
@@ -464,7 +494,7 @@ const Home = () => {
                 className='home-landing__copy-button home-landing__gradient-button'
                 size={isMobile ? 'default' : 'large'}
               >
-                {t('复制地址')}
+                复制端点
               </Button>
             </div>
 
@@ -477,16 +507,16 @@ const Home = () => {
                   type='primary'
                   size={isMobile ? 'default' : 'large'}
                 >
-                  {t('快速控制台')}
+                  进入控制台
                 </Button>
               </Link>
               {renderSecondaryAction()}
             </div>
 
             <div className='home-landing__hero-meta'>
-              <span>{t('支持众多的大模型供应商')}</span>
+              <span>适合 OpenAI 兼容接入、统一鉴权与额度管理</span>
               <span className='home-landing__meta-divider' />
-              <span>{t('覆盖多模态、推理、图像与音频接口')}</span>
+              <span>支持 OpenAI、Claude、Gemini、DeepSeek、Grok、Midjourney 等模型</span>
             </div>
           </main>
 
@@ -504,7 +534,7 @@ const Home = () => {
           </section>
 
           <footer className='home-landing__footer'>
-            {t('版权所有')} {currentYear} {systemName}
+            © {currentYear} {systemName}
           </footer>
         </div>
       ) : (
