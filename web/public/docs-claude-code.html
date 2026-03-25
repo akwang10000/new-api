@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN" data-i18n-title="page_title">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/icon_rounded.png" />
+    <title>Claude Code 接入指南</title>
+    <style>
+      :root {
+        --bg: #050912;
+        --panel: rgba(5, 17, 29, 0.82);
+        --panel-strong: rgba(8, 22, 38, 0.9);
+        --line: rgba(0, 243, 255, 0.14);
+        --line-strong: rgba(0, 243, 255, 0.28);
+        --text: #f5f7ff;
+        --muted: rgba(228, 234, 255, 0.72);
+        --muted-soft: rgba(228, 234, 255, 0.52);
+        --accent: #00f3ff;
+        --accent-soft: rgba(0, 243, 255, 0.14);
+        --glow: 0 20px 60px rgba(0, 243, 255, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        color: var(--text);
+        background: radial-gradient(circle at center, #0a0e17 0%, #000 82%);
+        font-family: Bahnschrift, "Segoe UI", "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: linear-gradient(
+            rgba(0, 243, 255, 0.035) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(0, 243, 255, 0.035) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.94),
+          rgba(0, 0, 0, 0.58)
+        );
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          180deg,
+          rgba(180, 255, 255, 0.028) 0,
+          rgba(180, 255, 255, 0.028) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+        mix-blend-mode: screen;
+        opacity: 0.22;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .glow {
+        position: fixed;
+        border-radius: 999px;
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .glow--top {
+        top: -96px;
+        left: 50%;
+        width: 540px;
+        height: 260px;
+        transform: translateX(-50%);
+        background: rgba(0, 243, 255, 0.14);
+      }
+
+      .glow--center {
+        top: 240px;
+        left: 50%;
+        width: 700px;
+        height: 340px;
+        transform: translateX(-50%);
+        background: rgba(0, 160, 190, 0.11);
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 72px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 68px;
+        padding: 0 4px 18px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand img {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        box-shadow: 0 12px 24px rgba(0, 243, 255, 0.18);
+      }
+
+      .brand span {
+        font-style: italic;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(2, 16, 27, 0.72);
+      }
+
+      .lang-option {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        padding: 8px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .lang-option.is-active {
+        color: var(--text);
+        background: linear-gradient(
+          135deg,
+          rgba(0, 243, 255, 0.2),
+          rgba(94, 212, 255, 0.08)
+        );
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(2, 16, 27, 0.68);
+        color: var(--muted);
+      }
+
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--panel);
+        box-shadow: var(--glow);
+        backdrop-filter: blur(18px);
+      }
+
+      .hero {
+        padding: 34px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(34px, 6vw, 62px);
+        line-height: 1.04;
+      }
+
+      .hero p {
+        max-width: 820px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.85;
+      }
+
+      .top-tabs,
+      .hero-tags,
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .top-tabs {
+        margin-top: 24px;
+      }
+
+      .top-tab,
+      .hero-tags span,
+      .action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 15px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .top-tab,
+      .hero-tags span {
+        color: var(--muted);
+      }
+
+      .top-tab.is-active {
+        border-color: var(--line-strong);
+        background: linear-gradient(
+          135deg,
+          rgba(0, 243, 255, 0.16),
+          rgba(94, 212, 255, 0.06)
+        );
+        color: var(--text);
+      }
+
+      .hero-tags {
+        margin-top: 22px;
+      }
+
+      .actions {
+        margin-top: 22px;
+      }
+
+      .action--primary {
+        border-color: rgba(0, 243, 255, 0.35);
+        background: linear-gradient(
+          135deg,
+          rgba(0, 243, 255, 0.2),
+          rgba(94, 212, 255, 0.08)
+        );
+      }
+
+      .section {
+        margin-top: 22px;
+      }
+
+      .panel {
+        padding: 28px;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 24px;
+      }
+
+      h3 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.85;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 22px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        min-height: 100%;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel-strong);
+      }
+
+      .card-tag {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(0, 243, 255, 0.1);
+        color: var(--accent);
+        font-size: 12px;
+      }
+
+      .callout {
+        margin-top: 16px;
+        padding: 18px 20px;
+        border-left: 4px solid var(--accent);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .code {
+        margin-top: 14px;
+        padding: 18px;
+        border: 1px solid rgba(0, 243, 255, 0.1);
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.32);
+        overflow-x: auto;
+      }
+
+      pre,
+      code {
+        font-family: Consolas, "SFMono-Regular", "Courier New", monospace;
+      }
+
+      pre {
+        margin: 0;
+        color: #dffcff;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      code.inline {
+        padding: 2px 7px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #dffcff;
+      }
+
+      .footer {
+        margin-top: 22px;
+        text-align: center;
+        color: var(--muted-soft);
+        font-size: 13px;
+      }
+
+      @media (max-width: 680px) {
+        .page {
+          width: min(100% - 18px, 1120px);
+          padding-top: 18px;
+          padding-bottom: 48px;
+        }
+
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero,
+        .panel {
+          border-radius: 22px;
+          padding: 22px;
+        }
+      }
+    </style>
+    <script>
+      window.DOCS_I18N = {
+        "zh-CN": {
+          page_title: "Claude Code 接入指南",
+          brand_text: "Nerve Centers 文档",
+          back_docs: "返回文档首页",
+          eyebrow: "Claude Code + 中转层",
+          hero_title: "如何让 Claude Code 用上 Nerve Centers",
+          hero_desc:
+            "先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更通俗地说，Claude Code 说的是另一种“接口语言”，所以中间要先加一层“翻译器”，再把请求转到 Nerve Centers。",
+          tab_home: "文档首页",
+          tab_claude: "Claude Code 接入",
+          tab_codex: "Codex 接入",
+          hero_tag_route: "推荐链路：Claude Code → 中转层 → Nerve Centers",
+          hero_tag_direct: "不能直接连接 OpenAI 兼容地址",
+          hero_tag_translate: "中转层负责转换请求",
+          hero_action: "查看 Codex 指南",
+          summary_title: "一句话理解",
+          summary_card_1_tag: "Claude Code",
+          summary_card_1_title: "不能直接连",
+          summary_card_1_desc:
+            "Claude Code 不能直接把请求发到 Nerve Centers 的 OpenAI 兼容接口，否则大概率会卡在请求格式不匹配这一步。",
+          summary_card_2_tag: "中转层",
+          summary_card_2_title: "负责翻译",
+          summary_card_2_desc:
+            "中转层的工作就是把 Claude Code 发出的请求，转换成 Nerve Centers 能识别和接收的请求。",
+          summary_card_3_tag: "Nerve Centers",
+          summary_card_3_title: "继续做统一入口",
+          summary_card_3_desc:
+            "现有的令牌、模型映射、计费和日志能力都可以继续复用，不需要把现有网关推翻重来。",
+          why_title: "为什么不能直接连接",
+          why_intro:
+            "最容易理解的方式不是去谈底层协议，而是把它看成“双方说的不是同一种话”：",
+          why_li_1: "Claude Code 默认期待的是它自己那套接口格式。",
+          why_li_2: "Nerve Centers 当前对外提供的是 OpenAI 兼容接口。",
+          why_li_3:
+            "所以 Claude Code 直接去连 Nerve Centers，经常表现为域名能通，但请求本身过不去。",
+          why_callout_html:
+            "<strong>可以把它想成翻译问题：</strong> Claude Code 先把话说给中转层，中转层再把内容翻译成 Nerve Centers 能接收的格式。",
+          flow_title: "推荐接法",
+          flow_desc:
+            "正确链路不是强行直连，而是先加一层中转服务，然后再接到现有网关：",
+          flow_points_1: "Claude Code 只连接中转层。",
+          flow_points_2: "中转层再去连接 Nerve Centers。",
+          flow_points_3:
+            "Nerve Centers 继续负责模型调用、令牌校验、计费和日志。",
+          prep_title: "你需要准备什么",
+          prep_li_1: "一个可用的 Nerve Centers 令牌。",
+          prep_li_2:
+            "一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。",
+          prep_li_3: "一层放在 Claude Code 和 Nerve Centers 中间的中转服务。",
+          prep_callout_html:
+            "<strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补上一层中转，让它能把请求顺利送进来。",
+          check_title: "怎么判断已经接对",
+          check_card_1_tag: "检查 1",
+          check_card_1_title: "Claude Code 能正常启动",
+          check_card_1_desc:
+            "启动时不再卡在认证或请求格式错误，而是可以正常进入工作流。",
+          check_card_2_tag: "检查 2",
+          check_card_2_title: "中转层有请求记录",
+          check_card_2_desc:
+            "说明 Claude Code 已经成功把请求打到了中间层，而不是直接连错地方。",
+          check_card_3_tag: "检查 3",
+          check_card_3_title: "Nerve Centers 有真实调用",
+          check_card_3_desc:
+            "如果中转层配置正确，你会在 Nerve Centers 侧看到真实的模型调用记录。",
+          pitfall_title: "常见误区",
+          pitfall_li_1:
+            "把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。",
+          pitfall_li_2: "以为模型名对上了就能用，实际接口格式不匹配也不行。",
+          pitfall_li_3: "把 Codex 的直连方案原样照搬到 Claude Code。",
+          footer_text:
+            "本页用于解释 Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。",
+        },
+        en: {
+          page_title: "Claude Code Integration Guide",
+          brand_text: "Nerve Centers Docs",
+          back_docs: "Back to Docs Home",
+          eyebrow: "Claude Code + Middleware",
+          hero_title: "How to use Claude Code with Nerve Centers",
+          hero_desc:
+            "Short version: Claude Code cannot connect to the Nerve Centers OpenAI-compatible endpoint directly the way Codex can. In simpler terms, Claude Code speaks a different interface language, so you need a translator layer in the middle before requests can reach Nerve Centers.",
+          tab_home: "Docs Home",
+          tab_claude: "Claude Code",
+          tab_codex: "Codex",
+          hero_tag_route: "Recommended flow: Claude Code → Middleware → Nerve Centers",
+          hero_tag_direct: "Cannot connect to the OpenAI-compatible endpoint directly",
+          hero_tag_translate: "Middleware translates the requests",
+          hero_action: "View Codex Guide",
+          summary_title: "The simple version",
+          summary_card_1_tag: "Claude Code",
+          summary_card_1_title: "No direct connection",
+          summary_card_1_desc:
+            "Claude Code cannot send requests straight to the Nerve Centers OpenAI-compatible endpoint. In practice, the request format usually fails first.",
+          summary_card_2_tag: "Middleware",
+          summary_card_2_title: "Acts as a translator",
+          summary_card_2_desc:
+            "The middleware converts requests from Claude Code into a format Nerve Centers can accept.",
+          summary_card_3_tag: "Nerve Centers",
+          summary_card_3_title: "Remains the unified gateway",
+          summary_card_3_desc:
+            "Your current tokens, model mapping, billing, and logging can all stay in place. There is no need to replace the gateway.",
+          why_title: "Why direct connection does not work",
+          why_intro:
+            "The easiest explanation is not low-level protocol theory. It is simply that the two sides do not speak the same format:",
+          why_li_1: "Claude Code expects its own interface format.",
+          why_li_2: "Nerve Centers currently exposes an OpenAI-compatible endpoint.",
+          why_li_3:
+            "So when Claude Code connects directly to Nerve Centers, the domain may resolve but the request still fails.",
+          why_callout_html:
+            "<strong>Think of it as a translation problem:</strong> Claude Code talks to the middleware first, and the middleware rewrites the request for Nerve Centers.",
+          flow_title: "Recommended architecture",
+          flow_desc:
+            "The correct setup is not forced direct access. Put a middleware layer in front of the current gateway:",
+          flow_points_1: "Claude Code connects only to the middleware.",
+          flow_points_2: "The middleware then connects to Nerve Centers.",
+          flow_points_3:
+            "Nerve Centers still handles model access, token checks, billing, and logs.",
+          prep_title: "What you need",
+          prep_li_1: "A valid Nerve Centers token.",
+          prep_li_2:
+            "A reachable OpenAI-compatible endpoint such as `https://robot2.indevs.in/v1`.",
+          prep_li_3: "A middleware service placed between Claude Code and Nerve Centers.",
+          prep_callout_html:
+            "<strong>The goal is not to replace Nerve Centers:</strong> you are only adding a layer in front so Claude Code can speak to it properly.",
+          check_title: "How to tell it is wired correctly",
+          check_card_1_tag: "Check 1",
+          check_card_1_title: "Claude Code starts normally",
+          check_card_1_desc:
+            "It should no longer fail immediately on auth or request-format problems and should enter its normal workflow.",
+          check_card_2_tag: "Check 2",
+          check_card_2_title: "The middleware receives requests",
+          check_card_2_desc:
+            "That shows Claude Code is hitting the middle layer rather than the wrong endpoint.",
+          check_card_3_tag: "Check 3",
+          check_card_3_title: "Nerve Centers shows real traffic",
+          check_card_3_desc:
+            "If the middleware is configured correctly, you should see real model calls on the Nerve Centers side.",
+          pitfall_title: "Common mistakes",
+          pitfall_li_1:
+            "Pointing Claude Code directly at `https://robot2.indevs.in/v1`.",
+          pitfall_li_2:
+            "Assuming the right model name is enough when the request format is still incompatible.",
+          pitfall_li_3:
+            "Copying the Codex direct-access setup into Claude Code without a middleware layer.",
+          footer_text:
+            "This page explains why Claude Code needs a middleware layer when integrating with Nerve Centers.",
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <div class="glow glow--top"></div>
+    <div class="glow glow--center"></div>
+
+    <main class="page">
+      <header class="header">
+        <a class="brand" href="/">
+          <img src="/icon_rounded.png" alt="Nerve Centers" />
+          <span data-i18n="brand_text">Nerve Centers 文档</span>
+        </a>
+        <div class="header-actions">
+          <div class="lang-switch" aria-label="Language switcher">
+            <button
+              class="lang-option"
+              type="button"
+              data-lang-option="zh-CN"
+              aria-pressed="false"
+            >
+              中文
+            </button>
+            <button
+              class="lang-option"
+              type="button"
+              data-lang-option="en"
+              aria-pressed="false"
+            >
+              EN
+            </button>
+          </div>
+          <a class="back-link" href="/docs-home.html" data-keep-lang data-i18n="back_docs"
+            >返回文档首页</a
+          >
+        </div>
+      </header>
+
+      <section class="hero">
+        <span class="eyebrow" data-i18n="eyebrow">Claude Code + 中转层</span>
+        <h1 data-i18n="hero_title">如何让 Claude Code 用上 Nerve Centers</h1>
+        <p data-i18n="hero_desc">
+          先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更通俗地说，Claude Code 说的是另一种“接口语言”，所以中间要先加一层“翻译器”，再把请求转到 Nerve Centers。
+        </p>
+        <div class="top-tabs">
+          <a class="top-tab" href="/docs-home.html" data-keep-lang>
+            <span data-i18n="tab_home">文档首页</span>
+          </a>
+          <a class="top-tab is-active" href="/docs-claude-code.html" data-keep-lang>
+            <span data-i18n="tab_claude">Claude Code 接入</span>
+          </a>
+          <a class="top-tab" href="/docs-codex-openai.html" data-keep-lang>
+            <span data-i18n="tab_codex">Codex 接入</span>
+          </a>
+        </div>
+        <div class="hero-tags">
+          <span data-i18n="hero_tag_route"
+            >推荐链路：Claude Code → 中转层 → Nerve Centers</span
+          >
+          <span data-i18n="hero_tag_direct">不能直接连接 OpenAI 兼容地址</span>
+          <span data-i18n="hero_tag_translate">中转层负责转换请求</span>
+        </div>
+        <div class="actions">
+          <a
+            class="action action--primary"
+            href="/docs-codex-openai.html"
+            data-keep-lang
+            data-i18n="hero_action"
+            >查看 Codex 指南</a
+          >
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="summary_title">一句话理解</h2>
+        <div class="grid">
+          <article class="card">
+            <span class="card-tag" data-i18n="summary_card_1_tag">Claude Code</span>
+            <h3 data-i18n="summary_card_1_title">不能直接连</h3>
+            <p data-i18n="summary_card_1_desc">
+              Claude Code 不能直接把请求发到 Nerve Centers 的 OpenAI 兼容接口，否则大概率会卡在请求格式不匹配这一步。
+            </p>
+          </article>
+          <article class="card">
+            <span class="card-tag" data-i18n="summary_card_2_tag">中转层</span>
+            <h3 data-i18n="summary_card_2_title">负责翻译</h3>
+            <p data-i18n="summary_card_2_desc">
+              中转层的工作就是把 Claude Code 发出的请求，转换成 Nerve Centers 能识别和接收的请求。
+            </p>
+          </article>
+          <article class="card">
+            <span class="card-tag" data-i18n="summary_card_3_tag">Nerve Centers</span>
+            <h3 data-i18n="summary_card_3_title">继续做统一入口</h3>
+            <p data-i18n="summary_card_3_desc">
+              现有的令牌、模型映射、计费和日志能力都可以继续复用，不需要把现有网关推翻重来。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="why_title">为什么不能直接连接</h2>
+        <p data-i18n="why_intro">
+          最容易理解的方式不是去谈底层协议，而是把它看成“双方说的不是同一种话”：
+        </p>
+        <ul>
+          <li data-i18n="why_li_1">Claude Code 默认期待的是它自己那套接口格式。</li>
+          <li data-i18n="why_li_2">Nerve Centers 当前对外提供的是 OpenAI 兼容接口。</li>
+          <li data-i18n="why_li_3">
+            所以 Claude Code 直接去连 Nerve Centers，经常表现为域名能通，但请求本身过不去。
+          </li>
+        </ul>
+        <div class="callout" data-i18n-html="why_callout_html">
+          <strong>可以把它想成翻译问题：</strong> Claude Code 先把话说给中转层，中转层再把内容翻译成 Nerve Centers 能接收的格式。
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="flow_title">推荐接法</h2>
+        <p data-i18n="flow_desc">
+          正确链路不是强行直连，而是先加一层中转服务，然后再接到现有网关：
+        </p>
+        <div class="code">
+          <pre>Claude Code
+  -> Middleware
+  -> Nerve Centers /v1</pre>
+        </div>
+        <ul>
+          <li data-i18n="flow_points_1">Claude Code 只连接中转层。</li>
+          <li data-i18n="flow_points_2">中转层再去连接 Nerve Centers。</li>
+          <li data-i18n="flow_points_3">
+            Nerve Centers 继续负责模型调用、令牌校验、计费和日志。
+          </li>
+        </ul>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="prep_title">你需要准备什么</h2>
+        <ol>
+          <li data-i18n="prep_li_1">一个可用的 Nerve Centers 令牌。</li>
+          <li data-i18n="prep_li_2">
+            一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。
+          </li>
+          <li data-i18n="prep_li_3">
+            一层放在 Claude Code 和 Nerve Centers 中间的中转服务。
+          </li>
+        </ol>
+        <div class="callout" data-i18n-html="prep_callout_html">
+          <strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补上一层中转，让它能把请求顺利送进来。
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="check_title">怎么判断已经接对</h2>
+        <div class="grid">
+          <article class="card">
+            <span class="card-tag" data-i18n="check_card_1_tag">检查 1</span>
+            <h3 data-i18n="check_card_1_title">Claude Code 能正常启动</h3>
+            <p data-i18n="check_card_1_desc">
+              启动时不再卡在认证或请求格式错误，而是可以正常进入工作流。
+            </p>
+          </article>
+          <article class="card">
+            <span class="card-tag" data-i18n="check_card_2_tag">检查 2</span>
+            <h3 data-i18n="check_card_2_title">中转层有请求记录</h3>
+            <p data-i18n="check_card_2_desc">
+              说明 Claude Code 已经成功把请求打到了中间层，而不是直接连错地方。
+            </p>
+          </article>
+          <article class="card">
+            <span class="card-tag" data-i18n="check_card_3_tag">检查 3</span>
+            <h3 data-i18n="check_card_3_title">Nerve Centers 有真实调用</h3>
+            <p data-i18n="check_card_3_desc">
+              如果中转层配置正确，你会在 Nerve Centers 侧看到真实的模型调用记录。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="pitfall_title">常见误区</h2>
+        <ul>
+          <li data-i18n="pitfall_li_1">
+            把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。
+          </li>
+          <li data-i18n="pitfall_li_2">
+            以为模型名对上了就能用，实际接口格式不匹配也不行。
+          </li>
+          <li data-i18n="pitfall_li_3">
+            把 Codex 的直连方案原样照搬到 Claude Code。
+          </li>
+        </ul>
+      </section>
+
+      <footer class="footer" data-i18n="footer_text">
+        本页用于解释 Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。
+      </footer>
+    </main>
+
+    <script src="/docs-i18n.js"></script>
+  </body>
+</html>
