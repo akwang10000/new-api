@@ -87,6 +87,7 @@ const RegisterForm = () => {
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
   const [showEmailRegister, setShowEmailRegister] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
@@ -190,7 +191,7 @@ const RegisterForm = () => {
     setWechatCodeSubmitLoading(true);
     try {
       const res = await API.get(
-        `/api/oauth/wechat?code=${inputs.wechat_verification_code}`,
+        `/api/oauth/wechat?code=${inputs.wechat_verification_code}&turnstile=${turnstileToken}`,
       );
       const { success, message, data } = res.data;
       if (success) {
@@ -207,6 +208,9 @@ const RegisterForm = () => {
     } catch (error) {
       showError(t('登录失败，请重试'));
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstileChallenge();
+      }
       setWechatCodeSubmitLoading(false);
     }
   };
@@ -214,6 +218,11 @@ const RegisterForm = () => {
   function handleChange(name, value) {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
   }
+
+  const resetTurnstileChallenge = () => {
+    setTurnstileToken('');
+    setTurnstileWidgetKey((prev) => prev + 1);
+  };
 
   async function handleSubmit(e) {
     if (password.length < 8) {
@@ -249,6 +258,9 @@ const RegisterForm = () => {
       } catch (error) {
         showError(t('注册失败，请重试'));
       } finally {
+        if (turnstileEnabled) {
+          resetTurnstileChallenge();
+        }
         setRegisterLoading(false);
       }
     }
@@ -275,6 +287,9 @@ const RegisterForm = () => {
     } catch (error) {
       showError(t('发送验证码失败，请重试'));
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstileChallenge();
+      }
       setVerificationCodeLoading(false);
     }
   };
@@ -295,7 +310,10 @@ const RegisterForm = () => {
       setGithubButtonDisabled(true);
     }, 20000);
     try {
-      onGitHubOAuthClicked(status.github_client_id, { shouldLogout: true });
+      onGitHubOAuthClicked(status.github_client_id, {
+        shouldLogout: true,
+        turnstileToken,
+      });
     } finally {
       setTimeout(() => setGithubLoading(false), 3000);
     }
@@ -304,7 +322,10 @@ const RegisterForm = () => {
   const handleDiscordClick = () => {
     setDiscordLoading(true);
     try {
-      onDiscordOAuthClicked(status.discord_client_id, { shouldLogout: true });
+      onDiscordOAuthClicked(status.discord_client_id, {
+        shouldLogout: true,
+        turnstileToken,
+      });
     } finally {
       setTimeout(() => setDiscordLoading(false), 3000);
     }
@@ -317,7 +338,7 @@ const RegisterForm = () => {
         status.oidc_authorization_endpoint,
         status.oidc_client_id,
         false,
-        { shouldLogout: true },
+        { shouldLogout: true, turnstileToken },
       );
     } finally {
       setTimeout(() => setOidcLoading(false), 3000);
@@ -327,7 +348,10 @@ const RegisterForm = () => {
   const handleLinuxDOClick = () => {
     setLinuxdoLoading(true);
     try {
-      onLinuxDOOAuthClicked(status.linuxdo_client_id, { shouldLogout: true });
+      onLinuxDOOAuthClicked(status.linuxdo_client_id, {
+        shouldLogout: true,
+        turnstileToken,
+      });
     } finally {
       setTimeout(() => setLinuxdoLoading(false), 3000);
     }
@@ -336,7 +360,7 @@ const RegisterForm = () => {
   const handleCustomOAuthClick = (provider) => {
     setCustomOAuthLoading((prev) => ({ ...prev, [provider.slug]: true }));
     try {
-      onCustomOAuthClicked(provider, { shouldLogout: true });
+      onCustomOAuthClicked(provider, { shouldLogout: true, turnstileToken });
     } finally {
       setTimeout(() => {
         setCustomOAuthLoading((prev) => ({ ...prev, [provider.slug]: false }));
@@ -794,6 +818,7 @@ const RegisterForm = () => {
         {turnstileEnabled && (
           <div className='flex justify-center mt-6'>
             <Turnstile
+              key={turnstileWidgetKey}
               sitekey={turnstileSiteKey}
               onVerify={(token) => {
                 setTurnstileToken(token);

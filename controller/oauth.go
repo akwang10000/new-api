@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
+	"github.com/QuantumNous/new-api/middleware"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/oauth"
 	"github.com/gin-contrib/sessions"
@@ -14,9 +16,58 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	oauthRegistrationTurnstileSessionKey = "oauth_register_turnstile_verified_at"
+	oauthRegistrationTurnstileTTLSeconds = 10 * 60
+)
+
 // providerParams returns map with Provider key for i18n templates
 func providerParams(name string) map[string]any {
 	return map[string]any{"Provider": name}
+}
+
+func markOAuthRegistrationTurnstileVerified(session sessions.Session) {
+	session.Set(oauthRegistrationTurnstileSessionKey, time.Now().Unix())
+}
+
+func clearOAuthRegistrationTurnstileVerification(session sessions.Session) {
+	session.Delete(oauthRegistrationTurnstileSessionKey)
+}
+
+func consumeOAuthRegistrationTurnstileVerification(session sessions.Session) error {
+	if !common.TurnstileCheckEnabled {
+		return nil
+	}
+
+	raw := session.Get(oauthRegistrationTurnstileSessionKey)
+	if raw == nil {
+		return &OAuthTurnstileRequiredError{}
+	}
+
+	var verifiedAt int64
+	switch value := raw.(type) {
+	case int64:
+		verifiedAt = value
+	case int:
+		verifiedAt = int64(value)
+	case int32:
+		verifiedAt = int64(value)
+	case float64:
+		verifiedAt = int64(value)
+	default:
+		clearOAuthRegistrationTurnstileVerification(session)
+		_ = session.Save()
+		return &OAuthTurnstileRequiredError{}
+	}
+
+	clearOAuthRegistrationTurnstileVerification(session)
+	if err := session.Save(); err != nil {
+		return err
+	}
+	if time.Now().Unix()-verifiedAt > oauthRegistrationTurnstileTTLSeconds {
+		return &OAuthTurnstileRequiredError{}
+	}
+	return nil
 }
 
 // GenerateOAuthCode generates a state code for OAuth CSRF protection
@@ -28,6 +79,18 @@ func GenerateOAuthCode(c *gin.Context) {
 		session.Set("aff", affCode)
 	}
 	session.Set("oauth_state", state)
+	clearOAuthRegistrationTurnstileVerification(session)
+	if common.TurnstileCheckEnabled && c.Query("turnstile") != "" {
+		if err := middleware.VerifyTurnstileToken(c.Query("turnstile"), c.ClientIP()); err != nil {
+			_ = session.Save()
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		markOAuthRegistrationTurnstileVerified(session)
+	}
 	err := session.Save()
 	if err != nil {
 		common.ApiError(c, err)
@@ -111,6 +174,11 @@ func HandleOAuth(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgOAuthUserDeleted)
 		case *OAuthRegistrationDisabledError:
 			common.ApiErrorI18n(c, i18n.MsgUserRegisterDisabled)
+		case *OAuthTurnstileRequiredError:
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
 		default:
 			common.ApiError(c, err)
 		}
@@ -234,6 +302,9 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	if !common.RegisterEnabled {
 		return nil, &OAuthRegistrationDisabledError{}
 	}
+	if err := consumeOAuthRegistrationTurnstileVerification(session); err != nil {
+		return nil, err
+	}
 
 	// Set up new user
 	user.Username = provider.GetProviderPrefix() + strconv.Itoa(model.GetMaxUserId()+1)
@@ -339,6 +410,12 @@ type OAuthRegistrationDisabledError struct{}
 
 func (e *OAuthRegistrationDisabledError) Error() string {
 	return "registration is disabled"
+}
+
+type OAuthTurnstileRequiredError struct{}
+
+func (e *OAuthTurnstileRequiredError) Error() string {
+	return "Turnstile verification is required before creating a new account"
 }
 
 // handleOAuthError handles OAuth errors and returns translated message

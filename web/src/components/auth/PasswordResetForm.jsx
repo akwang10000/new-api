@@ -45,6 +45,7 @@ const PasswordResetForm = () => {
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
 
@@ -79,6 +80,11 @@ const PasswordResetForm = () => {
     setInputs((inputs) => ({ ...inputs, email: value }));
   }
 
+  const resetTurnstileChallenge = () => {
+    setTurnstileToken('');
+    setTurnstileWidgetKey((prev) => prev + 1);
+  };
+
   async function handleSubmit(e) {
     if (!email) {
       showError(t('请输入邮箱地址'));
@@ -90,22 +96,27 @@ const PasswordResetForm = () => {
     }
     setDisableButton(true);
     setLoading(true);
-    const res = await API.get(
-      `/api/reset_password?email=${email}&turnstile=${turnstileToken}`,
-    );
-    const { success, message } = res.data;
-    if (success) {
-      showSuccess(t('重置邮件发送成功，请检查邮箱！'));
-      setInputs({ ...inputs, email: '' });
-    } else {
-      showError(message);
+    try {
+      const res = await API.get(
+        `/api/reset_password?email=${email}&turnstile=${turnstileToken}`,
+      );
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess(t('重置邮件发送成功，请检查邮箱！'));
+        setInputs({ ...inputs, email: '' });
+      } else {
+        showError(message);
+      }
+    } finally {
+      if (turnstileEnabled) {
+        resetTurnstileChallenge();
+      }
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
     <div className='relative overflow-hidden bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
-      {/* 背景模糊晕染球 */}
       <div
         className='blur-ball blur-ball-indigo'
         style={{ top: '-80px', right: '-80px', transform: 'none' }}
@@ -176,6 +187,7 @@ const PasswordResetForm = () => {
             {turnstileEnabled && (
               <div className='flex justify-center mt-6'>
                 <Turnstile
+                  key={turnstileWidgetKey}
                   sitekey={turnstileSiteKey}
                   onVerify={(token) => {
                     setTurnstileToken(token);

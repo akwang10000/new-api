@@ -138,7 +138,7 @@ func Register(c *gin.Context) {
 		return
 	}
 	var user model.User
-	err := json.NewDecoder(c.Request.Body).Decode(&user)
+	err := common.DecodeJson(c.Request.Body, &user)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -152,10 +152,6 @@ func Register(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgUserEmailVerificationRequired)
 			return
 		}
-		if !common.VerifyCodeWithKey(user.Email, user.VerificationCode, common.EmailVerificationPurpose) {
-			common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
-			return
-		}
 	}
 	exist, err := model.CheckUserExistOrDeleted(user.Username, user.Email)
 	if err != nil {
@@ -165,6 +161,10 @@ func Register(c *gin.Context) {
 	}
 	if exist {
 		common.ApiErrorI18n(c, i18n.MsgUserExists)
+		return
+	}
+	if common.EmailVerificationEnabled && !common.VerifyAndDeleteCodeWithKey(user.Email, user.VerificationCode, common.EmailVerificationPurpose) {
+		common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
 		return
 	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code
@@ -928,8 +928,8 @@ func ManageUser(c *gin.Context) {
 func EmailBind(c *gin.Context) {
 	email := c.Query("email")
 	code := c.Query("code")
-	if !common.VerifyCodeWithKey(email, code, common.EmailVerificationPurpose) {
-		common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
+	if err := common.Validate.Var(email, "required,email"); err != nil {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
 	}
 	session := sessions.Default(c)
@@ -942,8 +942,15 @@ func EmailBind(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if model.IsEmailAlreadyTakenByOtherUser(email, user.Id) {
+		common.ApiErrorI18n(c, i18n.MsgUserExists)
+		return
+	}
+	if !common.VerifyAndDeleteCodeWithKey(email, code, common.EmailVerificationPurpose) {
+		common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
+		return
+	}
 	user.Email = email
-	// no need to check if this email already taken, because we have used verification code to check it
 	err = user.Update(false)
 	if err != nil {
 		common.ApiError(c, err)

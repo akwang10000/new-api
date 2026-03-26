@@ -677,7 +677,11 @@ func (user *User) FillUserByTelegramId() error {
 }
 
 func IsEmailAlreadyTaken(email string) bool {
-	return DB.Unscoped().Where("email = ?", email).Find(&User{}).RowsAffected == 1
+	return DB.Unscoped().Where("email = ?", email).Find(&User{}).RowsAffected > 0
+}
+
+func IsEmailAlreadyTakenByOtherUser(email string, userId int) bool {
+	return DB.Unscoped().Where("email = ? AND id <> ?", email, userId).Find(&User{}).RowsAffected > 0
 }
 
 func IsWeChatIdAlreadyTaken(wechatId string) bool {

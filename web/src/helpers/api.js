@@ -220,11 +220,20 @@ export const processGroupsData = (data, userGroup) => {
 
 // 原来components中的utils.js
 
-export async function getOAuthState() {
+export async function getOAuthState(options = {}) {
+  const { turnstileToken = '' } = options;
   let path = '/api/oauth/state';
   let affCode = localStorage.getItem('aff');
+  const params = new URLSearchParams();
   if (affCode && affCode.length > 0) {
-    path += `?aff=${affCode}`;
+    params.set('aff', affCode);
+  }
+  if (turnstileToken) {
+    params.set('turnstile', turnstileToken);
+  }
+  const queryString = params.toString();
+  if (queryString) {
+    path += `?${queryString}`;
   }
   const res = await API.get(path);
   const { success, message, data } = res.data;
@@ -245,7 +254,7 @@ async function prepareOAuthState(options = {}) {
     localStorage.removeItem('user');
     updateAPI();
   }
-  return await getOAuthState();
+  return await getOAuthState(options);
 }
 
 export async function onDiscordOAuthClicked(client_id, options = {}) {
