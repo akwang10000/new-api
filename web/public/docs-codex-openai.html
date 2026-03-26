@@ -361,13 +361,6 @@
         word-break: break-word;
       }
 
-      code.inline {
-        padding: 2px 7px;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #dffcff;
-      }
-
       .footer {
         margin-top: 22px;
         text-align: center;
@@ -399,55 +392,54 @@
         "zh-CN": {
           page_title: "Codex 接入指南",
           brand_text: "Nerve Centers 文档",
+          lang_zh: "中文",
+          lang_en: "英文",
           back_docs: "返回文档首页",
           eyebrow: "Codex + OpenAI 兼容接口",
           hero_title: "如何把 Codex 接到 OpenAI 兼容接口",
           hero_desc:
-            "和 Claude Code 不同，Codex CLI 可以直接通过 provider 配置连接 OpenAI 兼容接口。对 Nerve Centers 来说，推荐做法是给 Codex 单独配一个 provider，再把 base URL 指向本站提供的 `https://robot2.indevs.in/v1`。",
+            "Codex CLI 可以直接通过自定义服务提供方配置连接 OpenAI 兼容接口，不需要额外中转层。对 Nerve Centers 来说，关键是把服务提供方名称、令牌变量和 `/v1` 接口地址配对。",
           tab_home: "文档首页",
           tab_claude: "Claude Code 接入",
           tab_codex: "Codex 接入",
-          hero_tag_route: "推荐链路：Codex → Nerve Centers /v1",
+          hero_tag_route: "推荐链路：Codex -> Nerve Centers /v1",
           hero_tag_direct: "不需要中间翻译层",
-          hero_tag_openai: "可以直接连 OpenAI 兼容接口",
+          hero_tag_openai: "可以直接连接 OpenAI 兼容接口",
           hero_action: "查看 Claude Code 指南",
-          diff_title: "核心差异",
-          diff_card_1_tag: "Claude Code",
-          diff_card_1_title: "中间需要一层中转",
+          diff_title: "先看结论",
+          diff_card_1_tag: "和 Claude Code 的区别",
+          diff_card_1_title: "这里可以直接连",
           diff_card_1_desc:
-            "Claude Code 不能直接连接这里的 OpenAI 兼容接口，通常需要先经过一层中转，把请求转换成可用格式。",
-          diff_card_2_tag: "Codex",
-          diff_card_2_title: "可以直接连 OpenAI 兼容接口",
+            "Codex CLI 本身就支持通过服务提供方配置走 OpenAI 兼容接口，所以不需要再额外加一层中转。",
+          diff_card_2_tag: "真正的重点",
+          diff_card_2_title: "要填对 3 个位置",
           diff_card_2_desc:
-            "Codex CLI 支持用 provider 方式直接连接 OpenAI 兼容接口，因此只需要把 base URL 和令牌配置好。",
-          diff_card_3_tag: "建议做法",
-          diff_card_3_title: "单独建一个 provider",
+            "最关键的是服务提供方名称、`base_url` 和对应环境变量，这三处只要对齐，链路就很清晰。",
+          diff_card_3_tag: "推荐做法",
+          diff_card_3_title: "单独建一个服务提供方",
           diff_card_3_desc:
-            "不要覆盖默认配置。给 Nerve Centers 单独建一个 provider，后续切模型或切服务更稳妥。",
+            "不要覆盖默认配置，给 Nerve Centers 单独留一个服务提供方，后面切模型或切服务更稳。",
           prep_title: "前置条件",
           prep_li_1: "你已经拿到一个可用的 Nerve Centers 令牌。",
-          prep_li_2:
-            "站点可通过 `https://robot2.indevs.in/v1` 提供 OpenAI 兼容接口。",
+          prep_li_2: "站点可以通过 `https://robot2.indevs.in/v1` 提供 OpenAI 兼容接口。",
           prep_li_3: "本机已经安装 Codex CLI。",
           prep_callout_html:
-            "<strong>说明：</strong> 本页示例按当前站点真实可用的接入方式编写，不使用占位用的假地址。",
-          step1_title: "步骤 1：配置 Codex provider",
+            "<strong>说明：</strong> 本页用的是本站真实可用的接法，不用占位用的假地址。",
+          step1_title: "步骤 1：配置 Codex 服务提供方",
           step1_desc:
-            "在 `~/.codex/config.toml` 中新增或修改下面这段配置：",
-          step1_li_1:
-            "`model_provider = \"proxy\"` 表示让 Codex 使用自定义 provider。",
-          step1_li_2:
-            "`base_url` 要直接指向 Nerve Centers 的 `/v1` 根路径，而不是首页域名。",
-          step2_title: "步骤 2：注入 API Key",
+            "在 `~/.codex/config.toml` 里新增或修改下面这段配置：",
+          step1_li_1: "`model_provider = \"proxy\"` 表示让 Codex 使用自定义服务提供方配置。",
+          step1_li_2: "`base_url` 必须指向 `/v1` 接口根路径，而不是首页域名。",
+          step2_title: "步骤 2：注入访问令牌",
           step2_desc:
-            "当前配置里使用 `env_key = \"NEWAPI\"`，所以启动 Codex 的终端里要提供同名环境变量：",
+            "当前示例使用 `env_key = \"NEWAPI\"`，所以启动 Codex 的终端里要提供同名环境变量：",
           step2_callout_html:
-            "<strong>不要混淆：</strong> 这里不是必须写成 `OPENAI_API_KEY`，而是由 `env_key` 决定具体读取哪个环境变量名。",
+            "<strong>不要混淆：</strong> 这里不要求必须叫 `OPENAI_API_KEY`，实际读取哪个变量名，取决于 `env_key`。",
           step3_title: "步骤 3：启动 Codex",
           step3_desc:
-            "配置完成后，直接在目标仓库里运行 Codex 即可：",
+            "配置完成后，直接在目标仓库里启动 Codex 即可：",
           step3_result:
-            "如果 Codex 能正常进入会话，而不是立刻报认证错误或找不到 provider，说明基础接入已经打通。",
+            "如果 Codex 能正常进入会话，而不是立刻报认证错误或服务提供方配置错误，说明基础链路已经打通。",
           verify_title: "验证点",
           verify_card_1_tag: "检查 1",
           verify_card_1_title: "Codex 能正常启动",
@@ -456,84 +448,79 @@
           verify_card_2_tag: "检查 2",
           verify_card_2_title: "Nerve Centers 有请求记录",
           verify_card_2_desc:
-            "在 Nerve Centers 后台应能看到对应模型调用、日志或计费记录。",
+            "后台应该能看到对应模型调用、日志或计费记录。",
           verify_card_3_tag: "检查 3",
-          verify_card_3_title: "模型名称可用",
+          verify_card_3_title: "模型名称有效",
           verify_card_3_desc:
-            "如果 provider 已通但模型名无效，请求会在真正发起时失败，此时需要改回站点已开放的模型名。",
+            "如果服务提供方已通但模型名无效，请求还是会失败，这时就要改回站点已开放的模型。",
           faq_title: "常见问题",
-          faq_li_1:
-            "把 `base_url` 写成首页地址，而不是带 `/v1` 的接口根路径。",
-          faq_li_2:
-            "`env_key` 和实际环境变量名不一致，导致 Codex 读不到令牌。",
-          faq_li_3:
-            "把 Claude Code 那套“先过一层翻译器”的方案照搬给 Codex，结果多加了一层不必要的中转。",
-          faq_li_4:
-            "模型名称填写成站点未开放或未映射的模型，表现为连通了但请求失败。",
+          faq_li_1: "把 `base_url` 写成首页地址，而不是带 `/v1` 的接口根路径。",
+          faq_li_2: "`env_key` 和实际环境变量名不一致，导致 Codex 读不到令牌。",
+          faq_li_3: "把 Claude Code 那套中转方案照搬给 Codex，多加了一层不必要的中转。",
+          faq_li_4: "模型名称填成站点未开放或未映射的模型，表现为连通了但请求失败。",
           advice_title: "推荐做法",
-          advice_li_1: "给 Nerve Centers 单独保留一个 `proxy` provider。",
+          advice_li_1: "给 Nerve Centers 单独保留一个 `proxy` 服务提供方。",
           advice_li_2: "把 `base_url` 固定写成 `https://robot2.indevs.in/v1`。",
-          advice_li_3:
-            "用独立环境变量保存令牌，例如当前示例中的 `NEWAPI`。",
-          advice_li_4:
-            "先用一个稳定模型验证连通，再切到你实际要用的模型。",
+          advice_li_3: "用独立环境变量保存令牌，例如当前示例中的 `NEWAPI`。",
+          advice_li_4: "先用一个稳定模型验证连通，再切到你真正要用的模型。",
           advice_callout_html:
-            "<strong>一句话总结：</strong> Codex 接入 Nerve Centers 的关键不是协议转换，而是把 `~/.codex/config.toml` 中的 provider、`/v1` 地址和令牌变量配置正确。",
+            "<strong>一句话总结：</strong> Codex 接入 Nerve Centers 的关键不是协议转换，而是把服务提供方、`/v1` 地址和令牌变量配正确。",
           footer_text:
-            "本页用于说明如何让 Codex 直接接入 Nerve Centers 提供的 OpenAI 兼容接口。",
+            "本页只讲一件事：怎样把 Codex 直接接到 Nerve Centers 提供的 OpenAI 兼容接口。",
         },
         en: {
           page_title: "Codex Integration Guide",
           brand_text: "Nerve Centers Docs",
+          lang_zh: "Chinese",
+          lang_en: "English",
           back_docs: "Back to Docs Home",
           eyebrow: "Codex + OpenAI-Compatible API",
           hero_title: "How to connect Codex to an OpenAI-compatible API",
           hero_desc:
-            "Unlike Claude Code, Codex CLI can connect directly to an OpenAI-compatible endpoint through provider configuration. For Nerve Centers, the recommended setup is a dedicated provider whose base URL points to `https://robot2.indevs.in/v1`.",
+            "Codex CLI can connect directly to an OpenAI-compatible API through a custom provider configuration, so no extra middleware layer is required. For Nerve Centers, the key is simply matching the provider name, token variable, and `/v1` endpoint.",
           tab_home: "Docs Home",
           tab_claude: "Claude Code",
           tab_codex: "Codex",
-          hero_tag_route: "Recommended flow: Codex → Nerve Centers /v1",
+          hero_tag_route: "Recommended flow: Codex -> Nerve Centers /v1",
           hero_tag_direct: "No translation layer needed",
           hero_tag_openai: "Can connect directly to an OpenAI-compatible API",
           hero_action: "View Claude Code Guide",
-          diff_title: "Core difference",
-          diff_card_1_tag: "Claude Code",
-          diff_card_1_title: "Needs middleware",
+          diff_title: "Start with the conclusion",
+          diff_card_1_tag: "Compared with Claude Code",
+          diff_card_1_title: "Direct access works here",
           diff_card_1_desc:
-            "Claude Code cannot connect directly to this OpenAI-compatible endpoint and usually needs a middle layer to translate requests.",
-          diff_card_2_tag: "Codex",
-          diff_card_2_title: "Direct OpenAI-compatible access",
+            "Codex CLI already supports OpenAI-compatible APIs through a provider, so you do not need an extra middleware layer.",
+          diff_card_2_tag: "What actually matters",
+          diff_card_2_title: "Three values need to line up",
           diff_card_2_desc:
-            "Codex CLI supports direct provider-based access to OpenAI-compatible APIs, so the main work is configuring base URL and token correctly.",
+            "The critical pieces are the provider name, the `base_url`, and the matching environment variable. If those line up, the flow stays simple.",
           diff_card_3_tag: "Recommended",
           diff_card_3_title: "Use a dedicated provider",
           diff_card_3_desc:
-            "Do not overwrite your default setup. Keep a dedicated provider for Nerve Centers so future switching is safer.",
+            "Do not overwrite the default setup. Keep a dedicated provider for Nerve Centers so future changes stay clean.",
           prep_title: "Prerequisites",
           prep_li_1: "You already have a valid Nerve Centers token.",
-          prep_li_2:
-            "The site exposes an OpenAI-compatible endpoint at `https://robot2.indevs.in/v1`.",
+          prep_li_2: "The site exposes an OpenAI-compatible API at `https://robot2.indevs.in/v1`.",
           prep_li_3: "Codex CLI is installed locally.",
           prep_callout_html:
-            "<strong>Note:</strong> The examples on this page use the real working site endpoint instead of placeholder URLs.",
+            "<strong>Note:</strong> this page uses the real working endpoint for this site rather than placeholder URLs.",
           step1_title: "Step 1: configure a Codex provider",
           step1_desc:
             "Add or update the following block in `~/.codex/config.toml`:",
           step1_li_1:
             "`model_provider = \"proxy\"` tells Codex to use a custom provider.",
           step1_li_2:
-            "`base_url` must point to the `/v1` API root on Nerve Centers, not just the home page domain.",
+            "`base_url` must point to the `/v1` API root rather than the home page domain.",
           step2_title: "Step 2: provide the API key",
           step2_desc:
-            "This setup uses `env_key = \"NEWAPI\"`, so you need to export an environment variable with that exact name before starting Codex:",
+            "This example uses `env_key = \"NEWAPI\"`, so you need an environment variable with that exact name before starting Codex:",
           step2_callout_html:
-            "<strong>Do not confuse this with `OPENAI_API_KEY`:</strong> the variable name is whatever `env_key` tells Codex to read.",
+            "<strong>Do not confuse this with `OPENAI_API_KEY`:</strong> the actual variable name is whatever `env_key` tells Codex to read.",
           step3_title: "Step 3: start Codex",
           step3_desc:
-            "Once the configuration is in place, run Codex directly inside the target repository:",
+            "Once the configuration is in place, start Codex inside the target repository:",
           step3_result:
-            "If Codex enters a normal session instead of failing immediately on auth or provider lookup, the basic integration is working.",
+            "If Codex enters a normal session instead of failing immediately on auth or provider lookup, the basic path is working.",
           verify_title: "Verification checks",
           verify_card_1_tag: "Check 1",
           verify_card_1_title: "Codex starts normally",
@@ -546,27 +533,21 @@
           verify_card_3_tag: "Check 3",
           verify_card_3_title: "The model name is valid",
           verify_card_3_desc:
-            "If the provider works but the model name is invalid, the actual request will still fail. Switch to a model exposed by the site.",
+            "If the provider works but the model name is invalid, requests will still fail. Switch back to a model exposed by the site.",
           faq_title: "Common issues",
-          faq_li_1:
-            "Setting `base_url` to the home page instead of the `/v1` API root.",
-          faq_li_2:
-            "Using an `env_key` that does not match the real environment variable name.",
-          faq_li_3:
-            "Copying the Claude Code middleware approach into Codex and adding an unnecessary extra layer.",
-          faq_li_4:
-            "Using a model name that the site does not expose or map.",
+          faq_li_1: "Setting `base_url` to the home page instead of the `/v1` API root.",
+          faq_li_2: "Using an `env_key` that does not match the real environment variable name.",
+          faq_li_3: "Copying the Claude Code middleware approach into Codex and adding an unnecessary extra layer.",
+          faq_li_4: "Using a model name that the site does not expose or map.",
           advice_title: "Recommended practice",
           advice_li_1: "Keep a dedicated `proxy` provider for Nerve Centers.",
           advice_li_2: "Set `base_url` to `https://robot2.indevs.in/v1`.",
-          advice_li_3:
-            "Store the token in a dedicated environment variable such as `NEWAPI`.",
-          advice_li_4:
-            "Validate connectivity with a stable model first, then switch to your actual target model.",
+          advice_li_3: "Store the token in a dedicated environment variable such as `NEWAPI`.",
+          advice_li_4: "Validate connectivity with a stable model first, then switch to your actual target model.",
           advice_callout_html:
-            "<strong>In one sentence:</strong> the key to Codex on Nerve Centers is not protocol translation, but correct provider, `/v1` base URL, and token-variable configuration.",
+            "<strong>In one sentence:</strong> the key to Codex on Nerve Centers is not protocol translation, but correct provider, `/v1` endpoint, and token-variable setup.",
           footer_text:
-            "This page explains how to connect Codex directly to the OpenAI-compatible API provided by Nerve Centers.",
+            "This page focuses on one thing: how to connect Codex directly to the OpenAI-compatible API exposed by Nerve Centers.",
         },
       };
     </script>
@@ -589,7 +570,7 @@
               data-lang-option="zh-CN"
               aria-pressed="false"
             >
-              中文
+              <span data-i18n="lang_zh">中文</span>
             </button>
             <button
               class="lang-option"
@@ -597,7 +578,7 @@
               data-lang-option="en"
               aria-pressed="false"
             >
-              EN
+              <span data-i18n="lang_en">English</span>
             </button>
           </div>
           <a class="back-link" href="/docs-home.html" data-keep-lang data-i18n="back_docs"
@@ -610,8 +591,9 @@
         <span class="eyebrow" data-i18n="eyebrow">Codex + OpenAI 兼容接口</span>
         <h1 data-i18n="hero_title">如何把 Codex 接到 OpenAI 兼容接口</h1>
         <p data-i18n="hero_desc">
-          和 Claude Code 不同，Codex CLI 可以直接通过 provider 配置连接 OpenAI 兼容接口。对 Nerve Centers 来说，推荐做法是给 Codex 单独配一个 provider，再把 base URL 指向本站提供的 `https://robot2.indevs.in/v1`。
+          Codex CLI 可以直接通过自定义服务提供方配置连接 OpenAI 兼容接口，不需要额外中转层。对 Nerve Centers 来说，关键是把服务提供方名称、令牌变量和 `/v1` 接口地址配对。
         </p>
+
         <div class="top-tabs">
           <a class="top-tab" href="/docs-home.html" data-keep-lang>
             <span data-i18n="tab_home">文档首页</span>
@@ -623,11 +605,13 @@
             <span data-i18n="tab_codex">Codex 接入</span>
           </a>
         </div>
+
         <div class="hero-tags">
-          <span data-i18n="hero_tag_route">推荐链路：Codex → Nerve Centers /v1</span>
+          <span data-i18n="hero_tag_route">推荐链路：Codex -> Nerve Centers /v1</span>
           <span data-i18n="hero_tag_direct">不需要中间翻译层</span>
-          <span data-i18n="hero_tag_openai">可以直接连 OpenAI 兼容接口</span>
+          <span data-i18n="hero_tag_openai">可以直接连接 OpenAI 兼容接口</span>
         </div>
+
         <div class="actions">
           <a
             class="action action--primary"
@@ -640,27 +624,27 @@
       </section>
 
       <section class="section panel">
-        <h2 data-i18n="diff_title">核心差异</h2>
+        <h2 data-i18n="diff_title">先看结论</h2>
         <div class="grid">
           <article class="card">
-            <span class="card-tag" data-i18n="diff_card_1_tag">Claude Code</span>
-            <h3 data-i18n="diff_card_1_title">中间需要一层中转</h3>
+            <span class="card-tag" data-i18n="diff_card_1_tag">和 Claude Code 的区别</span>
+            <h3 data-i18n="diff_card_1_title">这里可以直接连</h3>
             <p data-i18n="diff_card_1_desc">
-              Claude Code 不能直接连接这里的 OpenAI 兼容接口，通常需要先经过一层中转，把请求转换成可用格式。
+              Codex CLI 本身就支持通过服务提供方配置走 OpenAI 兼容接口，所以不需要再额外加一层中转。
             </p>
           </article>
           <article class="card">
-            <span class="card-tag" data-i18n="diff_card_2_tag">Codex</span>
-            <h3 data-i18n="diff_card_2_title">可以直接连 OpenAI 兼容接口</h3>
+            <span class="card-tag" data-i18n="diff_card_2_tag">真正的重点</span>
+            <h3 data-i18n="diff_card_2_title">要填对 3 个位置</h3>
             <p data-i18n="diff_card_2_desc">
-              Codex CLI 支持用 provider 方式直接连接 OpenAI 兼容接口，因此只需要把 base URL 和令牌配置好。
+              最关键的是服务提供方名称、`base_url` 和对应环境变量，这三处只要对齐，链路就很清晰。
             </p>
           </article>
           <article class="card">
-            <span class="card-tag" data-i18n="diff_card_3_tag">建议做法</span>
-            <h3 data-i18n="diff_card_3_title">单独建一个 provider</h3>
+            <span class="card-tag" data-i18n="diff_card_3_tag">推荐做法</span>
+            <h3 data-i18n="diff_card_3_title">单独建一个服务提供方</h3>
             <p data-i18n="diff_card_3_desc">
-              不要覆盖默认配置。给 Nerve Centers 单独建一个 provider，后续切模型或切服务更稳妥。
+              不要覆盖默认配置，给 Nerve Centers 单独留一个服务提供方，后面切模型或切服务更稳。
             </p>
           </article>
         </div>
@@ -670,20 +654,18 @@
         <h2 data-i18n="prep_title">前置条件</h2>
         <ol>
           <li data-i18n="prep_li_1">你已经拿到一个可用的 Nerve Centers 令牌。</li>
-          <li data-i18n="prep_li_2">
-            站点可通过 `https://robot2.indevs.in/v1` 提供 OpenAI 兼容接口。
-          </li>
+          <li data-i18n="prep_li_2">站点可以通过 `https://robot2.indevs.in/v1` 提供 OpenAI 兼容接口。</li>
           <li data-i18n="prep_li_3">本机已经安装 Codex CLI。</li>
         </ol>
         <div class="callout" data-i18n-html="prep_callout_html">
-          <strong>说明：</strong> 本页示例按当前站点真实可用的接入方式编写，不使用占位用的假地址。
+          <strong>说明：</strong> 本页用的是本站真实可用的接法，不用占位用的假地址。
         </div>
       </section>
 
       <section class="section panel">
-        <h2 data-i18n="step1_title">步骤 1：配置 Codex provider</h2>
+        <h2 data-i18n="step1_title">步骤 1：配置 Codex 服务提供方</h2>
         <p data-i18n="step1_desc">
-          在 `~/.codex/config.toml` 中新增或修改下面这段配置：
+          在 `~/.codex/config.toml` 里新增或修改下面这段配置：
         </p>
         <div class="code">
           <pre>model_provider = "proxy"
@@ -698,18 +680,18 @@ env_key = "NEWAPI"</pre>
         </div>
         <ul>
           <li data-i18n="step1_li_1">
-            `model_provider = "proxy"` 表示让 Codex 使用自定义 provider。
+            `model_provider = "proxy"` 表示让 Codex 使用自定义服务提供方配置。
           </li>
           <li data-i18n="step1_li_2">
-            `base_url` 要直接指向 Nerve Centers 的 `/v1` 根路径，而不是首页域名。
+            `base_url` 必须指向 `/v1` 接口根路径，而不是首页域名。
           </li>
         </ul>
       </section>
 
       <section class="section panel">
-        <h2 data-i18n="step2_title">步骤 2：注入 API Key</h2>
+        <h2 data-i18n="step2_title">步骤 2：注入访问令牌</h2>
         <p data-i18n="step2_desc">
-          当前配置里使用 `env_key = "NEWAPI"`，所以启动 Codex 的终端里要提供同名环境变量：
+          当前示例使用 `env_key = "NEWAPI"`，所以启动 Codex 的终端里要提供同名环境变量：
         </p>
         <div class="code">
           <pre># macOS / Linux
@@ -719,14 +701,14 @@ export NEWAPI=sk-your-nerve-centers-token
 $env:NEWAPI="sk-your-nerve-centers-token"</pre>
         </div>
         <div class="callout" data-i18n-html="step2_callout_html">
-          <strong>不要混淆：</strong> 这里不是必须写成 `OPENAI_API_KEY`，而是由 `env_key` 决定具体读取哪个环境变量名。
+          <strong>不要混淆：</strong> 这里不要求必须叫 `OPENAI_API_KEY`，实际读取哪个变量名，取决于 `env_key`。
         </div>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="step3_title">步骤 3：启动 Codex</h2>
         <p data-i18n="step3_desc">
-          配置完成后，直接在目标仓库里运行 Codex 即可：
+          配置完成后，直接在目标仓库里启动 Codex 即可：
         </p>
         <div class="code">
           <pre>codex
@@ -735,7 +717,7 @@ $env:NEWAPI="sk-your-nerve-centers-token"</pre>
 codex exec "检查当前项目的 README 并给出接入建议"</pre>
         </div>
         <p data-i18n="step3_result">
-          如果 Codex 能正常进入会话，而不是立刻报认证错误或找不到 provider，说明基础接入已经打通。
+          如果 Codex 能正常进入会话，而不是立刻报认证错误或服务提供方配置错误，说明基础链路已经打通。
         </p>
       </section>
 
@@ -753,14 +735,14 @@ codex exec "检查当前项目的 README 并给出接入建议"</pre>
             <span class="card-tag" data-i18n="verify_card_2_tag">检查 2</span>
             <h3 data-i18n="verify_card_2_title">Nerve Centers 有请求记录</h3>
             <p data-i18n="verify_card_2_desc">
-              在 Nerve Centers 后台应能看到对应模型调用、日志或计费记录。
+              后台应该能看到对应模型调用、日志或计费记录。
             </p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="verify_card_3_tag">检查 3</span>
-            <h3 data-i18n="verify_card_3_title">模型名称可用</h3>
+            <h3 data-i18n="verify_card_3_title">模型名称有效</h3>
             <p data-i18n="verify_card_3_desc">
-              如果 provider 已通但模型名无效，请求会在真正发起时失败，此时需要改回站点已开放的模型名。
+              如果服务提供方已通但模型名无效，请求还是会失败，这时就要改回站点已开放的模型。
             </p>
           </article>
         </div>
@@ -769,44 +751,28 @@ codex exec "检查当前项目的 README 并给出接入建议"</pre>
       <section class="section panel">
         <h2 data-i18n="faq_title">常见问题</h2>
         <ul>
-          <li data-i18n="faq_li_1">
-            把 `base_url` 写成首页地址，而不是带 `/v1` 的接口根路径。
-          </li>
-          <li data-i18n="faq_li_2">
-            `env_key` 和实际环境变量名不一致，导致 Codex 读不到令牌。
-          </li>
-          <li data-i18n="faq_li_3">
-            把 Claude Code 那套“先过一层翻译器”的方案照搬给 Codex，结果多加了一层不必要的中转。
-          </li>
-          <li data-i18n="faq_li_4">
-            模型名称填写成站点未开放或未映射的模型，表现为连通了但请求失败。
-          </li>
+          <li data-i18n="faq_li_1">把 `base_url` 写成首页地址，而不是带 `/v1` 的接口根路径。</li>
+          <li data-i18n="faq_li_2">`env_key` 和实际环境变量名不一致，导致 Codex 读不到令牌。</li>
+          <li data-i18n="faq_li_3">把 Claude Code 那套中转方案照搬给 Codex，多加了一层不必要的中转。</li>
+          <li data-i18n="faq_li_4">模型名称填成站点未开放或未映射的模型，表现为连通了但请求失败。</li>
         </ul>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="advice_title">推荐做法</h2>
         <ol>
-          <li data-i18n="advice_li_1">
-            给 Nerve Centers 单独保留一个 `proxy` provider。
-          </li>
-          <li data-i18n="advice_li_2">
-            把 `base_url` 固定写成 `https://robot2.indevs.in/v1`。
-          </li>
-          <li data-i18n="advice_li_3">
-            用独立环境变量保存令牌，例如当前示例中的 `NEWAPI`。
-          </li>
-          <li data-i18n="advice_li_4">
-            先用一个稳定模型验证连通，再切到你实际要用的模型。
-          </li>
+          <li data-i18n="advice_li_1">给 Nerve Centers 单独保留一个 `proxy` 服务提供方。</li>
+          <li data-i18n="advice_li_2">把 `base_url` 固定写成 `https://robot2.indevs.in/v1`。</li>
+          <li data-i18n="advice_li_3">用独立环境变量保存令牌，例如当前示例中的 `NEWAPI`。</li>
+          <li data-i18n="advice_li_4">先用一个稳定模型验证连通，再切到你真正要用的模型。</li>
         </ol>
         <div class="callout" data-i18n-html="advice_callout_html">
-          <strong>一句话总结：</strong> Codex 接入 Nerve Centers 的关键不是协议转换，而是把 `~/.codex/config.toml` 中的 provider、`/v1` 地址和令牌变量配置正确。
+          <strong>一句话总结：</strong> Codex 接入 Nerve Centers 的关键不是协议转换，而是把服务提供方、`/v1` 地址和令牌变量配正确。
         </div>
       </section>
 
       <footer class="footer" data-i18n="footer_text">
-        本页用于说明如何让 Codex 直接接入 Nerve Centers 提供的 OpenAI 兼容接口。
+        本页只讲一件事：怎样把 Codex 直接接到 Nerve Centers 提供的 OpenAI 兼容接口。
       </footer>
     </main>
 

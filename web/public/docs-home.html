@@ -220,10 +220,14 @@
         line-height: 1.85;
       }
 
-      .top-tabs {
+      .top-tabs,
+      .hero-metrics {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
+      }
+
+      .top-tabs {
         margin-top: 24px;
       }
 
@@ -246,6 +250,31 @@
           rgba(94, 212, 255, 0.06)
         );
         color: var(--text);
+      }
+
+      .hero-metrics {
+        margin-top: 22px;
+      }
+
+      .metric {
+        min-width: 180px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 15px;
+        color: var(--text);
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
       }
 
       .section {
@@ -453,93 +482,108 @@
         "zh-CN": {
           page_title: "Nerve Centers 文档中心",
           brand_text: "Nerve Centers 文档",
+          lang_zh: "中文",
+          lang_en: "英文",
           back_home: "返回首页",
           eyebrow: "文档",
           hero_title: "Nerve Centers 文档中心",
           hero_desc:
-            "这里集中整理当前开放的接入说明，优先覆盖实际会用到的 CLI 与兼容协议场景，方便团队成员快速找到正确入口。",
+            "这里集中整理当前开放的接入说明，优先覆盖最常用的 CLI 和兼容协议场景，让新成员能在几分钟内找到正确入口。",
           tab_home: "文档首页",
           tab_claude: "Claude Code 接入",
           tab_codex: "Codex 接入",
+          metric_1_title: "先看结论",
+          metric_1_desc: "先判断是直连，还是中间需要一层中转。",
+          metric_2_title: "再选文档",
+          metric_2_desc: "按使用的客户端进入对应指南，不需要先理解所有细节。",
+          metric_3_title: "后续可扩展",
+          metric_3_desc: "后面新增文档时，继续沿用这套导航和语言切换结构。",
           sidebar_title: "文档目录",
           nav_group_title: "当前可用",
           nav_claude_title: "Claude Code 接入",
           nav_claude_desc:
-            "适合需要让 Claude Code 使用 Nerve Centers 的场景，关键在于中间要加一层中转服务。",
+            "适合需要让 Claude Code 使用 Nerve Centers 的场景，核心是中间补一层中转服务。",
           nav_claude_status: "需要中转层",
           nav_codex_title: "Codex 接入",
           nav_codex_desc:
-            "适合直接连接 OpenAI 兼容接口的场景，重点是 provider 与 base URL 配置。",
+            "适合直接连接 OpenAI 兼容接口的场景，重点是服务提供方名称、令牌和接口地址配置。",
           nav_codex_status: "直接接入",
           content_title: "接入指南",
           content_desc:
-            "首页负责导航和摘要。具体步骤放在独立页面，后续新增文档也会继续沿用这一结构。",
+            "首页只负责导航和摘要，具体步骤放在独立页面。后面继续补文档时，也会保持这套结构和视觉语言。",
           card_claude_tag: "需要中转层",
           card_claude_title: "Claude Code 接入",
           card_claude_desc:
-            "Claude Code 不能直接连接现有 OpenAI 兼容接口，更好理解的方式是：它说的是另一种接口语言，所以中间要先加一层“翻译器”。",
-          card_claude_li_1: "先解释为什么 Claude Code 不能直接连现有地址",
-          card_claude_li_2: "再说明为什么中间需要一层中转服务",
-          card_claude_li_3:
-            "最后给出 Claude Code → 中转层 → Nerve Centers 的推荐链路",
+            "如果你要让 Claude Code 接入现有网关，这页会先把原因讲清楚，再给出最容易落地的接法。",
+          card_claude_li_1: "先解释为什么 Claude Code 不能直接连现有接口",
+          card_claude_li_2: "再说明中转层到底承担什么作用",
+          card_claude_li_3: "最后给出 Claude Code -> 中转层 -> Nerve Centers 的推荐链路",
           card_claude_action: "打开 Claude Code 指南",
           card_codex_tag: "OpenAI 兼容",
           card_codex_title: "Codex 接入",
           card_codex_desc:
-            "适合把 Codex CLI 直接指向 OpenAI 兼容接口的场景，重点是 provider 配置、环境变量和 base URL。",
-          card_codex_li_1: "包含本站真实可用的 base URL 示例",
-          card_codex_li_2: "说明 provider 名称、环境变量与模型配置",
+            "如果你用的是 Codex CLI，这页会直接告诉你应该改哪里、填什么值，以及怎样判断接通了。",
+          card_codex_li_1: "包含本站真实可用的接口地址示例",
+          card_codex_li_2: "说明服务提供方名称、环境变量和模型配置",
           card_codex_li_3: "适合团队成员快速自助接入",
           card_codex_action: "打开 Codex 指南",
           footer_text:
-            "首页只负责导航和摘要，不承载过多具体操作细节。",
+            "首页只保留导航和摘要，不堆过多操作细节。",
         },
         en: {
           page_title: "Nerve Centers Documentation",
           brand_text: "Nerve Centers Docs",
+          lang_zh: "Chinese",
+          lang_en: "English",
           back_home: "Back to Home",
           eyebrow: "Docs",
           hero_title: "Nerve Centers Documentation",
           hero_desc:
-            "This is the central entry for the currently available integration guides, focused on practical CLI and compatible-protocol scenarios your team will actually use.",
+            "This page is the central entry for the currently available integration guides, focused on the CLI and compatible-protocol setups people actually use first.",
           tab_home: "Docs Home",
           tab_claude: "Claude Code",
           tab_codex: "Codex",
+          metric_1_title: "Start with the conclusion",
+          metric_1_desc: "First decide whether you need direct access or a middleware layer.",
+          metric_2_title: "Then pick a guide",
+          metric_2_desc: "Choose the page that matches your client. You do not need all the background first.",
+          metric_3_title: "Built to grow",
+          metric_3_desc: "Future documentation pages can reuse the same layout and language switch flow.",
           sidebar_title: "Contents",
           nav_group_title: "Available now",
           nav_claude_title: "Claude Code",
           nav_claude_desc:
-            "For cases where Claude Code needs to work with Nerve Centers. The key is adding a middleware layer in between.",
+            "For Claude Code with Nerve Centers. The key is inserting a middleware layer in the middle.",
           nav_claude_status: "Needs middleware",
           nav_codex_title: "Codex",
           nav_codex_desc:
-            "For direct OpenAI-compatible access. The focus is provider and base URL configuration.",
+            "For direct OpenAI-compatible access. The focus is provider name, token, and endpoint setup.",
           nav_codex_status: "Direct access",
           content_title: "Integration Guides",
           content_desc:
-            "This page is only for navigation and summaries. Detailed steps live in dedicated pages, and future guides will follow the same layout.",
+            "This page is intentionally only for navigation and summaries. Detailed steps live in dedicated pages, and future docs will follow the same structure.",
           card_claude_tag: "Needs middleware",
           card_claude_title: "Claude Code",
           card_claude_desc:
-            "Claude Code cannot connect to the current OpenAI-compatible endpoint directly. The easiest way to think about it is: it speaks a different interface language, so a translator layer is required in the middle.",
+            "If you need Claude Code to work with the existing gateway, this guide explains the reason first and then shows the simplest production-friendly route.",
           card_claude_li_1:
-            "Explain why Claude Code cannot connect to the current endpoint directly",
+            "Why Claude Code cannot use the current endpoint directly",
           card_claude_li_2:
-            "Show why a middleware layer is needed in the middle",
+            "What the middleware layer is actually responsible for",
           card_claude_li_3:
-            "Provide the recommended flow: Claude Code → Middleware → Nerve Centers",
+            "The recommended flow: Claude Code -> Middleware -> Nerve Centers",
           card_claude_action: "Open Claude Guide",
           card_codex_tag: "OpenAI Compatible",
           card_codex_title: "Codex",
           card_codex_desc:
-            "For connecting Codex CLI directly to an OpenAI-compatible endpoint. The focus is provider setup, environment variables, and base URL.",
-          card_codex_li_1: "Includes the real base URL used on this site",
+            "If you use Codex CLI, this guide shows exactly what to change, what values to fill in, and how to verify the connection.",
+          card_codex_li_1: "Includes the real endpoint used by this site",
           card_codex_li_2:
-            "Covers provider name, environment variable, and model settings",
-          card_codex_li_3: "Good for fast self-serve onboarding",
+            "Covers provider name, environment variable, and model setup",
+          card_codex_li_3: "Good for quick self-serve onboarding",
           card_codex_action: "Open Codex Guide",
           footer_text:
-            "This home page is intentionally kept lightweight and only covers navigation and summaries.",
+            "The home page stays lightweight on purpose and only covers navigation and summaries.",
         },
       };
     </script>
@@ -562,7 +606,7 @@
               data-lang-option="zh-CN"
               aria-pressed="false"
             >
-              中文
+              <span data-i18n="lang_zh">中文</span>
             </button>
             <button
               class="lang-option"
@@ -570,7 +614,7 @@
               data-lang-option="en"
               aria-pressed="false"
             >
-              EN
+              <span data-i18n="lang_en">英文</span>
             </button>
           </div>
           <a class="back-link" href="/" data-i18n="back_home">返回首页</a>
@@ -581,8 +625,9 @@
         <span class="eyebrow" data-i18n="eyebrow">文档</span>
         <h1 data-i18n="hero_title">Nerve Centers 文档中心</h1>
         <p data-i18n="hero_desc">
-          这里集中整理当前开放的接入说明，优先覆盖实际会用到的 CLI 与兼容协议场景，方便团队成员快速找到正确入口。
+          这里集中整理当前开放的接入说明，优先覆盖最常用的 CLI 和兼容协议场景，让新成员能在几分钟内找到正确入口。
         </p>
+
         <div class="top-tabs">
           <a class="top-tab is-active" href="/docs-home.html" data-keep-lang>
             <span data-i18n="tab_home">文档首页</span>
@@ -593,6 +638,21 @@
           <a class="top-tab" href="/docs-codex-openai.html" data-keep-lang>
             <span data-i18n="tab_codex">Codex 接入</span>
           </a>
+        </div>
+
+        <div class="hero-metrics">
+          <div class="metric">
+            <strong data-i18n="metric_1_title">先看结论</strong>
+            <span data-i18n="metric_1_desc">先判断是直连，还是中间需要一层中转。</span>
+          </div>
+          <div class="metric">
+            <strong data-i18n="metric_2_title">再选文档</strong>
+            <span data-i18n="metric_2_desc">按使用的客户端进入对应指南，不需要先理解所有细节。</span>
+          </div>
+          <div class="metric">
+            <strong data-i18n="metric_3_title">后续可扩展</strong>
+            <span data-i18n="metric_3_desc">后面新增文档时，继续沿用这套导航和语言切换结构。</span>
+          </div>
         </div>
       </section>
 
@@ -605,21 +665,17 @@
               <a class="nav-item" href="/docs-claude-code.html" data-keep-lang>
                 <strong data-i18n="nav_claude_title">Claude Code 接入</strong>
                 <span data-i18n="nav_claude_desc">
-                  适合需要让 Claude Code 使用 Nerve Centers 的场景，关键在于中间要加一层中转服务。
+                  适合需要让 Claude Code 使用 Nerve Centers 的场景，核心是中间补一层中转服务。
                 </span>
-                <span class="status-pill" data-i18n="nav_claude_status"
-                  >需要中转层</span
-                >
+                <span class="status-pill" data-i18n="nav_claude_status">需要中转层</span>
               </a>
 
               <a class="nav-item" href="/docs-codex-openai.html" data-keep-lang>
                 <strong data-i18n="nav_codex_title">Codex 接入</strong>
                 <span data-i18n="nav_codex_desc">
-                  适合直接连接 OpenAI 兼容接口的场景，重点是 provider 与 base URL 配置。
+                  适合直接连接 OpenAI 兼容接口的场景，重点是服务提供方名称、令牌和接口地址配置。
                 </span>
-                <span class="status-pill" data-i18n="nav_codex_status"
-                  >直接接入</span
-                >
+                <span class="status-pill" data-i18n="nav_codex_status">直接接入</span>
               </a>
             </div>
           </div>
@@ -629,7 +685,7 @@
           <div class="content-header">
             <h2 data-i18n="content_title">接入指南</h2>
             <p data-i18n="content_desc">
-              首页负责导航和摘要。具体步骤放在独立页面，后续新增文档也会继续沿用这一结构。
+              首页只负责导航和摘要，具体步骤放在独立页面。后面继续补文档时，也会保持这套结构和视觉语言。
             </p>
           </div>
 
@@ -638,17 +694,13 @@
               <span class="card-tag" data-i18n="card_claude_tag">需要中转层</span>
               <h3 data-i18n="card_claude_title">Claude Code 接入</h3>
               <p data-i18n="card_claude_desc">
-                Claude Code 不能直接连接现有 OpenAI 兼容接口，更好理解的方式是：它说的是另一种接口语言，所以中间要先加一层“翻译器”。
+                如果你要让 Claude Code 接入现有网关，这页会先把原因讲清楚，再给出最容易落地的接法。
               </p>
               <ul>
-                <li data-i18n="card_claude_li_1">
-                  先解释为什么 Claude Code 不能直接连现有地址
-                </li>
-                <li data-i18n="card_claude_li_2">
-                  再说明为什么中间需要一层中转服务
-                </li>
+                <li data-i18n="card_claude_li_1">先解释为什么 Claude Code 不能直接连现有接口</li>
+                <li data-i18n="card_claude_li_2">再说明中转层到底承担什么作用</li>
                 <li data-i18n="card_claude_li_3">
-                  最后给出 Claude Code → 中转层 → Nerve Centers 的推荐链路
+                  最后给出 Claude Code -> 中转层 -> Nerve Centers 的推荐链路
                 </li>
               </ul>
               <div class="actions">
@@ -666,15 +718,11 @@
               <span class="card-tag" data-i18n="card_codex_tag">OpenAI 兼容</span>
               <h3 data-i18n="card_codex_title">Codex 接入</h3>
               <p data-i18n="card_codex_desc">
-                适合把 Codex CLI 直接指向 OpenAI 兼容接口的场景，重点是 provider 配置、环境变量和 base URL。
+                如果你用的是 Codex CLI，这页会直接告诉你应该改哪里、填什么值，以及怎样判断接通了。
               </p>
               <ul>
-                <li data-i18n="card_codex_li_1">
-                  包含本站真实可用的 base URL 示例
-                </li>
-                <li data-i18n="card_codex_li_2">
-                  说明 provider 名称、环境变量与模型配置
-                </li>
+                <li data-i18n="card_codex_li_1">包含本站真实可用的接口地址示例</li>
+                <li data-i18n="card_codex_li_2">说明服务提供方名称、环境变量和模型配置</li>
                 <li data-i18n="card_codex_li_3">适合团队成员快速自助接入</li>
               </ul>
               <div class="actions">
@@ -692,7 +740,7 @@
       </section>
 
       <footer class="footer" data-i18n="footer_text">
-        首页只负责导航和摘要，不承载过多具体操作细节。
+        首页只保留导航和摘要，不堆过多操作细节。
       </footer>
     </main>
 

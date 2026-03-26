@@ -361,13 +361,6 @@
         word-break: break-word;
       }
 
-      code.inline {
-        padding: 2px 7px;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #dffcff;
-      }
-
       .footer {
         margin-top: 22px;
         text-align: center;
@@ -399,126 +392,128 @@
         "zh-CN": {
           page_title: "Claude Code 接入指南",
           brand_text: "Nerve Centers 文档",
+          lang_zh: "中文",
+          lang_en: "英文",
           back_docs: "返回文档首页",
           eyebrow: "Claude Code + 中转层",
           hero_title: "如何让 Claude Code 用上 Nerve Centers",
           hero_desc:
-            "先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更通俗地说，Claude Code 说的是另一种“接口语言”，所以中间要先加一层“翻译器”，再把请求转到 Nerve Centers。",
+            "先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更好理解的说法是，Claude Code 说的是另一种接口语言，所以中间要先加一层“翻译器”。",
           tab_home: "文档首页",
           tab_claude: "Claude Code 接入",
           tab_codex: "Codex 接入",
-          hero_tag_route: "推荐链路：Claude Code → 中转层 → Nerve Centers",
+          hero_tag_route: "推荐链路：Claude Code -> 中转层 -> Nerve Centers",
           hero_tag_direct: "不能直接连接 OpenAI 兼容地址",
           hero_tag_translate: "中转层负责转换请求",
           hero_action: "查看 Codex 指南",
-          summary_title: "一句话理解",
-          summary_card_1_tag: "Claude Code",
-          summary_card_1_title: "不能直接连",
+          summary_title: "一分钟结论",
+          summary_card_1_tag: "不能直连",
+          summary_card_1_title: "不是地址通了就算接通",
           summary_card_1_desc:
-            "Claude Code 不能直接把请求发到 Nerve Centers 的 OpenAI 兼容接口，否则大概率会卡在请求格式不匹配这一步。",
+            "Claude Code 直接指向现有 OpenAI 兼容地址时，常见问题不是域名不通，而是请求格式对不上。",
           summary_card_2_tag: "中转层",
-          summary_card_2_title: "负责翻译",
+          summary_card_2_title: "它的职责很明确",
           summary_card_2_desc:
-            "中转层的工作就是把 Claude Code 发出的请求，转换成 Nerve Centers 能识别和接收的请求。",
-          summary_card_3_tag: "Nerve Centers",
-          summary_card_3_title: "继续做统一入口",
+            "中转层只负责把 Claude Code 发出的请求，改写成 Nerve Centers 能识别和接收的格式。",
+          summary_card_3_tag: "现有网关",
+          summary_card_3_title: "原有能力继续保留",
           summary_card_3_desc:
-            "现有的令牌、模型映射、计费和日志能力都可以继续复用，不需要把现有网关推翻重来。",
-          why_title: "为什么不能直接连接",
+            "模型映射、令牌校验、日志和计费能力仍然放在 Nerve Centers，不需要重做一套。",
+          why_title: "为什么不能直接连",
           why_intro:
-            "最容易理解的方式不是去谈底层协议，而是把它看成“双方说的不是同一种话”：",
-          why_li_1: "Claude Code 默认期待的是它自己那套接口格式。",
+            "这件事最容易理解的方式，不是去谈底层协议细节，而是把它看成“双方说的不是同一种话”：",
+          why_li_1: "Claude Code 默认期待的是它自己的那套接口格式。",
           why_li_2: "Nerve Centers 当前对外提供的是 OpenAI 兼容接口。",
           why_li_3:
-            "所以 Claude Code 直接去连 Nerve Centers，经常表现为域名能通，但请求本身过不去。",
+            "所以 Claude Code 直接去连 Nerve Centers，通常会表现成地址能访问，但请求无法正确处理。",
           why_callout_html:
-            "<strong>可以把它想成翻译问题：</strong> Claude Code 先把话说给中转层，中转层再把内容翻译成 Nerve Centers 能接收的格式。",
+            "<strong>可以把它理解成翻译问题：</strong> Claude Code 先把请求发给中转层，中转层再把它翻译成 Nerve Centers 能处理的格式。",
           flow_title: "推荐接法",
           flow_desc:
-            "正确链路不是强行直连，而是先加一层中转服务，然后再接到现有网关：",
+            "正确做法不是强行直连，而是先放一层中转服务，再把请求导向现有网关：",
+          flow_code: "Claude Code\n  -> 中转层\n  -> Nerve Centers /v1",
           flow_points_1: "Claude Code 只连接中转层。",
           flow_points_2: "中转层再去连接 Nerve Centers。",
-          flow_points_3:
-            "Nerve Centers 继续负责模型调用、令牌校验、计费和日志。",
+          flow_points_3: "Nerve Centers 继续负责模型调用、权限校验、计费和日志。",
           prep_title: "你需要准备什么",
           prep_li_1: "一个可用的 Nerve Centers 令牌。",
-          prep_li_2:
-            "一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。",
+          prep_li_2: "一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。",
           prep_li_3: "一层放在 Claude Code 和 Nerve Centers 中间的中转服务。",
           prep_callout_html:
-            "<strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补上一层中转，让它能把请求顺利送进来。",
+            "<strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补一层中转，让它能顺利把请求送进来。",
           check_title: "怎么判断已经接对",
           check_card_1_tag: "检查 1",
           check_card_1_title: "Claude Code 能正常启动",
           check_card_1_desc:
-            "启动时不再卡在认证或请求格式错误，而是可以正常进入工作流。",
+            "启动时不再卡在认证错误或请求格式错误，而是能正常进入工作流。",
           check_card_2_tag: "检查 2",
-          check_card_2_title: "中转层有请求记录",
+          check_card_2_title: "中转层能看到请求",
           check_card_2_desc:
-            "说明 Claude Code 已经成功把请求打到了中间层，而不是直接连错地方。",
+            "这说明 Claude Code 已经命中了中间层，而不是直接打到了错误地址。",
           check_card_3_tag: "检查 3",
           check_card_3_title: "Nerve Centers 有真实调用",
           check_card_3_desc:
-            "如果中转层配置正确，你会在 Nerve Centers 侧看到真实的模型调用记录。",
+            "如果中转层配置正确，你会在 Nerve Centers 一侧看到实际模型调用记录。",
           pitfall_title: "常见误区",
-          pitfall_li_1:
-            "把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。",
-          pitfall_li_2: "以为模型名对上了就能用，实际接口格式不匹配也不行。",
+          pitfall_li_1: "把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。",
+          pitfall_li_2: "以为模型名对上了就能用，实际上接口格式不匹配也不行。",
           pitfall_li_3: "把 Codex 的直连方案原样照搬到 Claude Code。",
           footer_text:
-            "本页用于解释 Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。",
+            "本页只解决一个核心问题：Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。",
         },
         en: {
           page_title: "Claude Code Integration Guide",
           brand_text: "Nerve Centers Docs",
+          lang_zh: "Chinese",
+          lang_en: "English",
           back_docs: "Back to Docs Home",
           eyebrow: "Claude Code + Middleware",
           hero_title: "How to use Claude Code with Nerve Centers",
           hero_desc:
-            "Short version: Claude Code cannot connect to the Nerve Centers OpenAI-compatible endpoint directly the way Codex can. In simpler terms, Claude Code speaks a different interface language, so you need a translator layer in the middle before requests can reach Nerve Centers.",
+            "Short version: Claude Code cannot connect to the Nerve Centers OpenAI-compatible endpoint the same way Codex can. The simplest way to think about it is that Claude Code speaks a different interface language, so you need a translator layer in the middle.",
           tab_home: "Docs Home",
           tab_claude: "Claude Code",
           tab_codex: "Codex",
-          hero_tag_route: "Recommended flow: Claude Code → Middleware → Nerve Centers",
-          hero_tag_direct: "Cannot connect to the OpenAI-compatible endpoint directly",
-          hero_tag_translate: "Middleware translates the requests",
+          hero_tag_route: "Recommended flow: Claude Code -> Middleware -> Nerve Centers",
+          hero_tag_direct: "Cannot use the OpenAI-compatible endpoint directly",
+          hero_tag_translate: "The middleware translates requests",
           hero_action: "View Codex Guide",
-          summary_title: "The simple version",
-          summary_card_1_tag: "Claude Code",
-          summary_card_1_title: "No direct connection",
+          summary_title: "One-minute summary",
+          summary_card_1_tag: "No direct access",
+          summary_card_1_title: "A reachable URL is not enough",
           summary_card_1_desc:
-            "Claude Code cannot send requests straight to the Nerve Centers OpenAI-compatible endpoint. In practice, the request format usually fails first.",
+            "When Claude Code points straight at the current OpenAI-compatible URL, the main problem is usually not DNS or connectivity. It is the request format.",
           summary_card_2_tag: "Middleware",
-          summary_card_2_title: "Acts as a translator",
+          summary_card_2_title: "Its role is narrow and clear",
           summary_card_2_desc:
-            "The middleware converts requests from Claude Code into a format Nerve Centers can accept.",
-          summary_card_3_tag: "Nerve Centers",
-          summary_card_3_title: "Remains the unified gateway",
+            "The middleware only rewrites requests from Claude Code into a shape Nerve Centers can accept.",
+          summary_card_3_tag: "Existing gateway",
+          summary_card_3_title: "The current gateway still does the real work",
           summary_card_3_desc:
-            "Your current tokens, model mapping, billing, and logging can all stay in place. There is no need to replace the gateway.",
-          why_title: "Why direct connection does not work",
+            "Model mapping, token validation, logs, and billing all stay in Nerve Centers. You do not need a replacement stack.",
+          why_title: "Why direct connection fails",
           why_intro:
-            "The easiest explanation is not low-level protocol theory. It is simply that the two sides do not speak the same format:",
+            "The easiest explanation is not low-level protocol theory. It is simply that the two sides do not speak the same request shape:",
           why_li_1: "Claude Code expects its own interface format.",
-          why_li_2: "Nerve Centers currently exposes an OpenAI-compatible endpoint.",
+          why_li_2: "Nerve Centers currently exposes an OpenAI-compatible API.",
           why_li_3:
-            "So when Claude Code connects directly to Nerve Centers, the domain may resolve but the request still fails.",
+            "So Claude Code may reach the domain successfully while the request itself still fails.",
           why_callout_html:
             "<strong>Think of it as a translation problem:</strong> Claude Code talks to the middleware first, and the middleware rewrites the request for Nerve Centers.",
-          flow_title: "Recommended architecture",
+          flow_title: "Recommended setup",
           flow_desc:
-            "The correct setup is not forced direct access. Put a middleware layer in front of the current gateway:",
+            "The production-friendly route is not forced direct access. Put a middleware layer in front of the current gateway:",
+          flow_code: "Claude Code\n  -> Middleware\n  -> Nerve Centers /v1",
           flow_points_1: "Claude Code connects only to the middleware.",
           flow_points_2: "The middleware then connects to Nerve Centers.",
           flow_points_3:
-            "Nerve Centers still handles model access, token checks, billing, and logs.",
+            "Nerve Centers still handles model access, auth checks, billing, and logs.",
           prep_title: "What you need",
           prep_li_1: "A valid Nerve Centers token.",
-          prep_li_2:
-            "A reachable OpenAI-compatible endpoint such as `https://robot2.indevs.in/v1`.",
+          prep_li_2: "A reachable OpenAI-compatible endpoint such as `https://robot2.indevs.in/v1`.",
           prep_li_3: "A middleware service placed between Claude Code and Nerve Centers.",
           prep_callout_html:
-            "<strong>The goal is not to replace Nerve Centers:</strong> you are only adding a layer in front so Claude Code can speak to it properly.",
+            "<strong>The goal is not to replace Nerve Centers:</strong> you are only adding one layer in front so Claude Code can speak to it correctly.",
           check_title: "How to tell it is wired correctly",
           check_card_1_tag: "Check 1",
           check_card_1_title: "Claude Code starts normally",
@@ -529,18 +524,15 @@
           check_card_2_desc:
             "That shows Claude Code is hitting the middle layer rather than the wrong endpoint.",
           check_card_3_tag: "Check 3",
-          check_card_3_title: "Nerve Centers shows real traffic",
+          check_card_3_title: "Nerve Centers sees real traffic",
           check_card_3_desc:
-            "If the middleware is configured correctly, you should see real model calls on the Nerve Centers side.",
+            "If the middleware is configured correctly, you should see actual model calls on the Nerve Centers side.",
           pitfall_title: "Common mistakes",
-          pitfall_li_1:
-            "Pointing Claude Code directly at `https://robot2.indevs.in/v1`.",
-          pitfall_li_2:
-            "Assuming the right model name is enough when the request format is still incompatible.",
-          pitfall_li_3:
-            "Copying the Codex direct-access setup into Claude Code without a middleware layer.",
+          pitfall_li_1: "Pointing Claude Code directly at `https://robot2.indevs.in/v1`.",
+          pitfall_li_2: "Assuming the right model name is enough when the request format is still incompatible.",
+          pitfall_li_3: "Copying the Codex direct-access setup into Claude Code.",
           footer_text:
-            "This page explains why Claude Code needs a middleware layer when integrating with Nerve Centers.",
+            "This page focuses on one core point: why Claude Code needs a middleware layer when integrating with Nerve Centers.",
         },
       };
     </script>
@@ -563,7 +555,7 @@
               data-lang-option="zh-CN"
               aria-pressed="false"
             >
-              中文
+              <span data-i18n="lang_zh">中文</span>
             </button>
             <button
               class="lang-option"
@@ -571,7 +563,7 @@
               data-lang-option="en"
               aria-pressed="false"
             >
-              EN
+              <span data-i18n="lang_en">English</span>
             </button>
           </div>
           <a class="back-link" href="/docs-home.html" data-keep-lang data-i18n="back_docs"
@@ -584,8 +576,9 @@
         <span class="eyebrow" data-i18n="eyebrow">Claude Code + 中转层</span>
         <h1 data-i18n="hero_title">如何让 Claude Code 用上 Nerve Centers</h1>
         <p data-i18n="hero_desc">
-          先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更通俗地说，Claude Code 说的是另一种“接口语言”，所以中间要先加一层“翻译器”，再把请求转到 Nerve Centers。
+          先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更好理解的说法是，Claude Code 说的是另一种接口语言，所以中间要先加一层“翻译器”。
         </p>
+
         <div class="top-tabs">
           <a class="top-tab" href="/docs-home.html" data-keep-lang>
             <span data-i18n="tab_home">文档首页</span>
@@ -597,13 +590,13 @@
             <span data-i18n="tab_codex">Codex 接入</span>
           </a>
         </div>
+
         <div class="hero-tags">
-          <span data-i18n="hero_tag_route"
-            >推荐链路：Claude Code → 中转层 → Nerve Centers</span
-          >
+          <span data-i18n="hero_tag_route">推荐链路：Claude Code -> 中转层 -> Nerve Centers</span>
           <span data-i18n="hero_tag_direct">不能直接连接 OpenAI 兼容地址</span>
           <span data-i18n="hero_tag_translate">中转层负责转换请求</span>
         </div>
+
         <div class="actions">
           <a
             class="action action--primary"
@@ -616,65 +609,63 @@
       </section>
 
       <section class="section panel">
-        <h2 data-i18n="summary_title">一句话理解</h2>
+        <h2 data-i18n="summary_title">一分钟结论</h2>
         <div class="grid">
           <article class="card">
-            <span class="card-tag" data-i18n="summary_card_1_tag">Claude Code</span>
-            <h3 data-i18n="summary_card_1_title">不能直接连</h3>
+            <span class="card-tag" data-i18n="summary_card_1_tag">不能直连</span>
+            <h3 data-i18n="summary_card_1_title">不是地址通了就算接通</h3>
             <p data-i18n="summary_card_1_desc">
-              Claude Code 不能直接把请求发到 Nerve Centers 的 OpenAI 兼容接口，否则大概率会卡在请求格式不匹配这一步。
+              Claude Code 直接指向现有 OpenAI 兼容地址时，常见问题不是域名不通，而是请求格式对不上。
             </p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="summary_card_2_tag">中转层</span>
-            <h3 data-i18n="summary_card_2_title">负责翻译</h3>
+            <h3 data-i18n="summary_card_2_title">它的职责很明确</h3>
             <p data-i18n="summary_card_2_desc">
-              中转层的工作就是把 Claude Code 发出的请求，转换成 Nerve Centers 能识别和接收的请求。
+              中转层只负责把 Claude Code 发出的请求，改写成 Nerve Centers 能识别和接收的格式。
             </p>
           </article>
           <article class="card">
-            <span class="card-tag" data-i18n="summary_card_3_tag">Nerve Centers</span>
-            <h3 data-i18n="summary_card_3_title">继续做统一入口</h3>
+            <span class="card-tag" data-i18n="summary_card_3_tag">现有网关</span>
+            <h3 data-i18n="summary_card_3_title">原有能力继续保留</h3>
             <p data-i18n="summary_card_3_desc">
-              现有的令牌、模型映射、计费和日志能力都可以继续复用，不需要把现有网关推翻重来。
+              模型映射、令牌校验、日志和计费能力仍然放在 Nerve Centers，不需要重做一套。
             </p>
           </article>
         </div>
       </section>
 
       <section class="section panel">
-        <h2 data-i18n="why_title">为什么不能直接连接</h2>
+        <h2 data-i18n="why_title">为什么不能直接连</h2>
         <p data-i18n="why_intro">
-          最容易理解的方式不是去谈底层协议，而是把它看成“双方说的不是同一种话”：
+          这件事最容易理解的方式，不是去谈底层协议细节，而是把它看成“双方说的不是同一种话”：
         </p>
         <ul>
-          <li data-i18n="why_li_1">Claude Code 默认期待的是它自己那套接口格式。</li>
+          <li data-i18n="why_li_1">Claude Code 默认期待的是它自己的那套接口格式。</li>
           <li data-i18n="why_li_2">Nerve Centers 当前对外提供的是 OpenAI 兼容接口。</li>
           <li data-i18n="why_li_3">
-            所以 Claude Code 直接去连 Nerve Centers，经常表现为域名能通，但请求本身过不去。
+            所以 Claude Code 直接去连 Nerve Centers，通常会表现成地址能访问，但请求无法正确处理。
           </li>
         </ul>
         <div class="callout" data-i18n-html="why_callout_html">
-          <strong>可以把它想成翻译问题：</strong> Claude Code 先把话说给中转层，中转层再把内容翻译成 Nerve Centers 能接收的格式。
+          <strong>可以把它理解成翻译问题：</strong> Claude Code 先把请求发给中转层，中转层再把它翻译成 Nerve Centers 能处理的格式。
         </div>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="flow_title">推荐接法</h2>
         <p data-i18n="flow_desc">
-          正确链路不是强行直连，而是先加一层中转服务，然后再接到现有网关：
+          正确做法不是强行直连，而是先放一层中转服务，再把请求导向现有网关：
         </p>
         <div class="code">
-          <pre>Claude Code
-  -> Middleware
+          <pre data-i18n="flow_code">Claude Code
+  -> 中转层
   -> Nerve Centers /v1</pre>
         </div>
         <ul>
           <li data-i18n="flow_points_1">Claude Code 只连接中转层。</li>
           <li data-i18n="flow_points_2">中转层再去连接 Nerve Centers。</li>
-          <li data-i18n="flow_points_3">
-            Nerve Centers 继续负责模型调用、令牌校验、计费和日志。
-          </li>
+          <li data-i18n="flow_points_3">Nerve Centers 继续负责模型调用、权限校验、计费和日志。</li>
         </ul>
       </section>
 
@@ -682,15 +673,11 @@
         <h2 data-i18n="prep_title">你需要准备什么</h2>
         <ol>
           <li data-i18n="prep_li_1">一个可用的 Nerve Centers 令牌。</li>
-          <li data-i18n="prep_li_2">
-            一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。
-          </li>
-          <li data-i18n="prep_li_3">
-            一层放在 Claude Code 和 Nerve Centers 中间的中转服务。
-          </li>
+          <li data-i18n="prep_li_2">一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。</li>
+          <li data-i18n="prep_li_3">一层放在 Claude Code 和 Nerve Centers 中间的中转服务。</li>
         </ol>
         <div class="callout" data-i18n-html="prep_callout_html">
-          <strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补上一层中转，让它能把请求顺利送进来。
+          <strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补一层中转，让它能顺利把请求送进来。
         </div>
       </section>
 
@@ -701,21 +688,21 @@
             <span class="card-tag" data-i18n="check_card_1_tag">检查 1</span>
             <h3 data-i18n="check_card_1_title">Claude Code 能正常启动</h3>
             <p data-i18n="check_card_1_desc">
-              启动时不再卡在认证或请求格式错误，而是可以正常进入工作流。
+              启动时不再卡在认证错误或请求格式错误，而是能正常进入工作流。
             </p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="check_card_2_tag">检查 2</span>
-            <h3 data-i18n="check_card_2_title">中转层有请求记录</h3>
+            <h3 data-i18n="check_card_2_title">中转层能看到请求</h3>
             <p data-i18n="check_card_2_desc">
-              说明 Claude Code 已经成功把请求打到了中间层，而不是直接连错地方。
+              这说明 Claude Code 已经命中了中间层，而不是直接打到了错误地址。
             </p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="check_card_3_tag">检查 3</span>
             <h3 data-i18n="check_card_3_title">Nerve Centers 有真实调用</h3>
             <p data-i18n="check_card_3_desc">
-              如果中转层配置正确，你会在 Nerve Centers 侧看到真实的模型调用记录。
+              如果中转层配置正确，你会在 Nerve Centers 一侧看到实际模型调用记录。
             </p>
           </article>
         </div>
@@ -724,20 +711,14 @@
       <section class="section panel">
         <h2 data-i18n="pitfall_title">常见误区</h2>
         <ul>
-          <li data-i18n="pitfall_li_1">
-            把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。
-          </li>
-          <li data-i18n="pitfall_li_2">
-            以为模型名对上了就能用，实际接口格式不匹配也不行。
-          </li>
-          <li data-i18n="pitfall_li_3">
-            把 Codex 的直连方案原样照搬到 Claude Code。
-          </li>
+          <li data-i18n="pitfall_li_1">把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。</li>
+          <li data-i18n="pitfall_li_2">以为模型名对上了就能用，实际上接口格式不匹配也不行。</li>
+          <li data-i18n="pitfall_li_3">把 Codex 的直连方案原样照搬到 Claude Code。</li>
         </ul>
       </section>
 
       <footer class="footer" data-i18n="footer_text">
-        本页用于解释 Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。
+        本页只解决一个核心问题：Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。
       </footer>
     </main>
 

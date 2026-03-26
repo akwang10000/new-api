@@ -1,11 +1,20 @@
 (function () {
   var STORAGE_KEY = "docs-lang";
+  var SITE_STORAGE_KEY = "i18nextLng";
   var SUPPORTED = ["zh-CN", "en"];
 
   function normalizeLang(value) {
     if (!value) return null;
     var lower = String(value).toLowerCase();
     if (lower === "zh" || lower === "zh-cn" || lower === "zh-hans") {
+      return "zh-CN";
+    }
+    if (
+      lower === "zh-tw" ||
+      lower === "zh-hk" ||
+      lower === "zh-mo" ||
+      lower === "zh-hant"
+    ) {
       return "zh-CN";
     }
     if (lower === "en" || lower === "en-us" || lower === "en-gb") {
@@ -21,6 +30,11 @@
 
     var fromStorage = normalizeLang(window.localStorage.getItem(STORAGE_KEY));
     if (fromStorage) return fromStorage;
+
+    var fromSiteStorage = normalizeLang(
+      window.localStorage.getItem(SITE_STORAGE_KEY),
+    );
+    if (fromSiteStorage) return fromSiteStorage;
 
     var fromBrowser = normalizeLang(navigator.language || navigator.userLanguage);
     return fromBrowser || "zh-CN";

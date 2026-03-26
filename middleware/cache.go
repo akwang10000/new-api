@@ -11,6 +11,8 @@ func Cache() func(c *gin.Context) {
 		path := c.Request.URL.Path
 		if path == "/" || strings.HasSuffix(path, ".html") {
 			c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private, max-age=0")
+			// Help browsers drop stale HTML/asset cache after frontend deployments.
+			c.Header("Clear-Site-Data", "\"cache\"")
 		} else {
 			c.Header("Cache-Control", "max-age=604800") // one week
 		}

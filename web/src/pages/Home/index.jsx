@@ -56,14 +56,35 @@ import './home.css';
 
 const DEFAULT_DOCS_LINK = '/docs-home.html?v=20260325-220151';
 
-const normalizeDocsLink = (docsLink) => {
+const normalizeDocsLang = (lang) => {
+  if (!lang) {
+    return 'en';
+  }
+  return String(lang).toLowerCase() === 'en' ? 'en' : 'zh-CN';
+};
+
+const normalizeDocsLink = (docsLink, lang) => {
+  const docsLang = normalizeDocsLang(lang);
+  const appendLang = (rawLink) => {
+    try {
+      const url = new URL(rawLink, window.location.origin);
+      url.searchParams.set('lang', docsLang);
+      if (url.origin === window.location.origin) {
+        return `${url.pathname}${url.search}${url.hash}`;
+      }
+      return url.toString();
+    } catch (error) {
+      return rawLink;
+    }
+  };
+
   if (!docsLink) {
-    return DEFAULT_DOCS_LINK;
+    return appendLang(DEFAULT_DOCS_LINK);
   }
   if (docsLink.startsWith('/docs-home.html') && !docsLink.includes('?')) {
-    return `${docsLink}?v=20260325-220151`;
+    return appendLang(`${docsLink}?v=20260325-220151`);
   }
-  return docsLink;
+  return appendLang(docsLink);
 };
 
 const { Text } = Typography;
@@ -119,7 +140,7 @@ const Home = () => {
   const logo = getLogo();
   const systemName = getSystemName();
   const docsLink = statusState?.status?.docs_link || '';
-  const resolvedDocsLink = normalizeDocsLink(docsLink);
+  const resolvedDocsLink = normalizeDocsLink(docsLink, currentLang);
   const serverAddress =
     statusState?.status?.server_address || `${window.location.origin}`;
   const isSelfUseMode = statusState?.status?.self_use_mode_enabled || false;
@@ -156,8 +177,9 @@ const Home = () => {
 
   const { mainNavLinks } = useNavigation(
     t,
-    resolvedDocsLink,
+    docsLink,
     headerNavModules,
+    currentLang,
   );
 
   const endpointPath = API_ENDPOINTS[endpointIndex] || API_ENDPOINTS[0];
@@ -303,17 +325,6 @@ const Home = () => {
   };
 
   const renderTopActions = () => {
-    const docsButton = resolvedDocsLink ? (
-      <a href={resolvedDocsLink} target='_blank' rel='noreferrer'>
-        <Button
-          theme='borderless'
-          className='home-landing__ghost-button home-landing__header-button'
-        >
-          {t('文档')}
-        </Button>
-      </a>
-    ) : null;
-
     const languageSelector = (
       <LanguageSelector
         currentLang={currentLang}
@@ -328,7 +339,6 @@ const Home = () => {
       return (
         <div className='home-landing__action-group'>
           {languageSelector}
-          {docsButton}
           <Link to='/console/personal' className='home-landing__profile'>
             <Avatar
               size='small'
@@ -352,7 +362,6 @@ const Home = () => {
     return (
       <div className='home-landing__action-group'>
         {languageSelector}
-        {docsButton}
         <div className='home-landing__auth-actions'>
         <Link to='/login'>
           <Button
@@ -465,24 +474,26 @@ const Home = () => {
 
           <main className='home-landing__hero'>
             <div className='home-landing__badge'>
-              一体化 AI 网关与模型接入
+              {t('一体化 AI 网关与模型接入')}
             </div>
 
             <h1 className='home-landing__title'>
-              <span>连接你的</span>
+              <span>{t('连接你的')}</span>
               <span className='home-landing__title-gradient'>
-                AI 模型统一入口
+                {t('AI 模型统一入口')}
               </span>
             </h1>
 
             <Text className='home-landing__description'>
               {t(
-                '一个支持多模型、多供应商与统一计费的 API 网关，帮助你把 OpenAI 兼容接入、模型路由和额度管理收敛到同一套系统中。',
+                '一个支持多模型、多供应商与统一计费的 AI 接口网关，帮助你把 OpenAI 兼容协议接入、模型路由和额度管理收敛到同一套系统中。',
               )}
             </Text>
 
             <div className='home-landing__endpoint-panel'>
-              <div className='home-landing__endpoint-prefix'>HTTPS</div>
+              <div className='home-landing__endpoint-prefix'>
+                {t('接口地址')}
+              </div>
               <code className='home-landing__endpoint-value'>
                 {fullEndpoint}
               </code>
@@ -494,7 +505,7 @@ const Home = () => {
                 className='home-landing__copy-button home-landing__gradient-button'
                 size={isMobile ? 'default' : 'large'}
               >
-                复制端点
+                {t('复制接口地址')}
               </Button>
             </div>
 
@@ -507,16 +518,22 @@ const Home = () => {
                   type='primary'
                   size={isMobile ? 'default' : 'large'}
                 >
-                  进入控制台
+                  {t('进入控制台')}
                 </Button>
               </Link>
               {renderSecondaryAction()}
             </div>
 
             <div className='home-landing__hero-meta'>
-              <span>适合 OpenAI 兼容接入、统一鉴权与额度管理</span>
+              <span>
+                {t('适合统一接入 OpenAI 兼容协议、鉴权与额度管理')}
+              </span>
               <span className='home-landing__meta-divider' />
-              <span>支持 OpenAI、Claude、Gemini、DeepSeek、Grok、Midjourney 等模型</span>
+              <span>
+                {t(
+                  '支持 OpenAI、Claude、Gemini、DeepSeek、Grok、Midjourney 等主流模型',
+                )}
+              </span>
             </div>
           </main>
 

@@ -21,19 +21,40 @@ import { useMemo } from 'react';
 
 const DEFAULT_DOCS_LINK = '/docs-home.html?v=20260325-220151';
 
-const normalizeDocsLink = (docsLink) => {
-  if (!docsLink) {
-    return DEFAULT_DOCS_LINK;
+const normalizeDocsLang = (lang) => {
+  if (!lang) {
+    return 'en';
   }
-  if (docsLink.startsWith('/docs-home.html') && !docsLink.includes('?')) {
-    return `${docsLink}?v=20260325-220151`;
-  }
-  return docsLink;
+  return String(lang).toLowerCase() === 'en' ? 'en' : 'zh-CN';
 };
 
-export const useNavigation = (t, docsLink, headerNavModules) => {
+const normalizeDocsLink = (docsLink, lang) => {
+  const docsLang = normalizeDocsLang(lang);
+  const appendLang = (rawLink) => {
+    try {
+      const url = new URL(rawLink, window.location.origin);
+      url.searchParams.set('lang', docsLang);
+      if (url.origin === window.location.origin) {
+        return `${url.pathname}${url.search}${url.hash}`;
+      }
+      return url.toString();
+    } catch (error) {
+      return rawLink;
+    }
+  };
+
+  if (!docsLink) {
+    return appendLang(DEFAULT_DOCS_LINK);
+  }
+  if (docsLink.startsWith('/docs-home.html') && !docsLink.includes('?')) {
+    return appendLang(`${docsLink}?v=20260325-220151`);
+  }
+  return appendLang(docsLink);
+};
+
+export const useNavigation = (t, docsLink, headerNavModules, currentLang) => {
   const mainNavLinks = useMemo(() => {
-    const resolvedDocsLink = normalizeDocsLink(docsLink);
+    const resolvedDocsLink = normalizeDocsLink(docsLink, currentLang);
     const defaultModules = {
       home: true,
       console: true,
@@ -91,7 +112,7 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
       }
       return modules[link.itemKey] === true;
     });
-  }, [t, docsLink, headerNavModules]);
+  }, [t, docsLink, headerNavModules, currentLang]);
 
   return {
     mainNavLinks,
