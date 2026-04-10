@@ -592,6 +592,19 @@ func (u *ClaudeUsage) GetCacheCreationTotalTokens() int {
 	return u.GetCacheCreation5mTokens() + u.GetCacheCreation1hTokens()
 }
 
+func NormalizeCacheCreationSplit(totalTokens int, tokens5m int, tokens1h int) (int, int) {
+	if tokens5m < 0 {
+		tokens5m = 0
+	}
+	if tokens1h < 0 {
+		tokens1h = 0
+	}
+	if totalTokens > tokens5m+tokens1h {
+		tokens5m += totalTokens - tokens5m - tokens1h
+	}
+	return tokens5m, tokens1h
+}
+
 type ClaudeServerToolUse struct {
 	WebSearchRequests int `json:"web_search_requests"`
 }

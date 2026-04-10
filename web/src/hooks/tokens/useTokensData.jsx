@@ -29,7 +29,10 @@ import {
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
-import { fetchTokenKey as fetchTokenKeyById } from '../../helpers/token';
+import {
+  fetchTokenKey as fetchTokenKeyById,
+  fetchTokenKeysBatch,
+} from '../../helpers/token';
 
 export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
   const { t } = useTranslation();
@@ -397,14 +400,17 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
       return;
     }
     try {
-      const keys = await Promise.all(
-        selectedKeys.map((token) => fetchTokenKey(token, { suppressError: true })),
-      );
+      const ids = selectedKeys.map((token) => token.id);
+      const keysMap = await fetchTokenKeysBatch(ids);
+
+      setResolvedTokenKeys((prev) => ({ ...prev, ...keysMap }));
+
       let content = '';
-      for (let i = 0; i < selectedKeys.length; i++) {
-        const fullKey = keys[i];
+      for (const token of selectedKeys) {
+        const fullKey = keysMap[token.id];
+        if (!fullKey) continue;
         if (copyType === 'name+key') {
-          content += `${selectedKeys[i].name}    sk-${fullKey}\n`;
+          content += `${token.name}    sk-${fullKey}\n`;
         } else {
           content += `sk-${fullKey}\n`;
         }

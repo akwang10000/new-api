@@ -1,10 +1,15 @@
 package claude
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/dto"
+	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/types"
+	"github.com/gin-gonic/gin"
 )
 
 func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
@@ -171,5 +176,127 @@ func TestFormatClaudeResponseInfo_ContentBlockDelta(t *testing.T) {
 	}
 	if claudeInfo.ResponseText.String() != "hello" {
 		t.Errorf("ResponseText = %q, want %q", claudeInfo.ResponseText.String(), "hello")
+	}
+}
+
+func TestNormalizeCacheCreationSplit(t *testing.T) {
+	tokens5m, tokens1h := dto.NormalizeCacheCreationSplit(50, 10, 20)
+	if tokens5m != 30 {
+		t.Fatalf("tokens5m = %d, want 30", tokens5m)
+	}
+	if tokens1h != 20 {
+		t.Fatalf("tokens1h = %d, want 20", tokens1h)
+	}
+}
+
+func TestFormatClaudeResponseInfo_MessageDelta_DefaultCacheCreationRemainderTo5m(t *testing.T) {
+	claudeInfo := &ClaudeResponseInfo{Usage: &dto.Usage{}}
+	claudeResponse := &dto.ClaudeResponse{
+		Type: "message_delta",
+		Usage: &dto.ClaudeUsage{
+			OutputTokens:             200,
+			CacheCreationInputTokens: 50,
+			CacheCreation: &dto.ClaudeCacheCreationUsage{
+				Ephemeral5mInputTokens: 10,
+				Ephemeral1hInputTokens: 20,
+			},
+		},
+	}
+
+	ok := FormatClaudeResponseInfo(claudeResponse, nil, claudeInfo)
+	if !ok {
+		t.Fatal("expected true")
+	}
+	if claudeInfo.Usage.ClaudeCacheCreation5mTokens != 10 {
+		t.Errorf("ClaudeCacheCreation5mTokens = %d, want 10", claudeInfo.Usage.ClaudeCacheCreation5mTokens)
+	}
+	if claudeInfo.Usage.ClaudeCacheCreation1hTokens != 20 {
+		t.Errorf("ClaudeCacheCreation1hTokens = %d, want 20", claudeInfo.Usage.ClaudeCacheCreation1hTokens)
+	}
+}
+
+func TestHandleStreamFinalResponsePreservesCacheFieldsOnFallback(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	responseText := strings.Builder{}
+	responseText.WriteString("hello world")
+
+	info := &relaycommon.RelayInfo{
+		RelayFormat: types.RelayFormatClaude,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "claude-3-5-sonnet"},
+	}
+	info.SetEstimatePromptTokens(999)
+
+	claudeInfo := &ClaudeResponseInfo{
+		ResponseText: responseText,
+		Usage: &dto.Usage{
+			PromptTokens: 100,
+			PromptTokensDetails: dto.InputTokenDetails{
+				CachedTokens:         30,
+				CachedCreationTokens: 50,
+			},
+			ClaudeCacheCreation5mTokens: 10,
+			ClaudeCacheCreation1hTokens: 20,
+		},
+	}
+
+	expected := service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
+	HandleStreamFinalResponse(c, info, claudeInfo)
+
+	if claudeInfo.Usage.PromptTokens != 100 {
+		t.Errorf("PromptTokens = %d, want 100", claudeInfo.Usage.PromptTokens)
+	}
+	if claudeInfo.Usage.CompletionTokens != expected.CompletionTokens {
+		t.Errorf("CompletionTokens = %d, want %d", claudeInfo.Usage.CompletionTokens, expected.CompletionTokens)
+	}
+	if claudeInfo.Usage.TotalTokens != 100+expected.CompletionTokens {
+		t.Errorf("TotalTokens = %d, want %d", claudeInfo.Usage.TotalTokens, 100+expected.CompletionTokens)
+	}
+	if claudeInfo.Usage.PromptTokensDetails.CachedTokens != 30 {
+		t.Errorf("CachedTokens = %d, want 30", claudeInfo.Usage.PromptTokensDetails.CachedTokens)
+	}
+	if claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens != 50 {
+		t.Errorf("CachedCreationTokens = %d, want 50", claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens)
+	}
+	if claudeInfo.Usage.ClaudeCacheCreation5mTokens != 10 {
+		t.Errorf("ClaudeCacheCreation5mTokens = %d, want 10", claudeInfo.Usage.ClaudeCacheCreation5mTokens)
+	}
+	if claudeInfo.Usage.ClaudeCacheCreation1hTokens != 20 {
+		t.Errorf("ClaudeCacheCreation1hTokens = %d, want 20", claudeInfo.Usage.ClaudeCacheCreation1hTokens)
+	}
+}
+
+func TestHandleStreamFinalResponseUsesEstimatedPromptTokensWhenPromptMissing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	responseText := strings.Builder{}
+	responseText.WriteString("hello world")
+
+	info := &relaycommon.RelayInfo{
+		RelayFormat: types.RelayFormatClaude,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "claude-3-5-sonnet"},
+	}
+	info.SetEstimatePromptTokens(77)
+
+	claudeInfo := &ClaudeResponseInfo{
+		ResponseText: responseText,
+		Usage:        &dto.Usage{},
+	}
+
+	expected := service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
+	HandleStreamFinalResponse(c, info, claudeInfo)
+
+	if claudeInfo.Usage.PromptTokens != expected.PromptTokens {
+		t.Errorf("PromptTokens = %d, want %d", claudeInfo.Usage.PromptTokens, expected.PromptTokens)
+	}
+	if claudeInfo.Usage.CompletionTokens != expected.CompletionTokens {
+		t.Errorf("CompletionTokens = %d, want %d", claudeInfo.Usage.CompletionTokens, expected.CompletionTokens)
+	}
+	if claudeInfo.Usage.TotalTokens != expected.TotalTokens {
+		t.Errorf("TotalTokens = %d, want %d", claudeInfo.Usage.TotalTokens, expected.TotalTokens)
 	}
 }
