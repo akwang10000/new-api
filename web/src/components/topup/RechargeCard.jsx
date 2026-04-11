@@ -629,31 +629,18 @@ const RechargeCard = ({
                       const save = originalPrice - discountedPrice;
 
                       const { symbol, rate, type } = getCurrencyConfig();
-                      const statusStr = localStorage.getItem('status');
-                      let usdRate = 7;
-                      try {
-                        if (statusStr) {
-                          const status = JSON.parse(statusStr);
-                          usdRate = status?.usd_exchange_rate || 7;
-                        }
-                      } catch (e) {
-                        // ignore
-                      }
 
                       let displayValue = preset.value;
-                      let displayActualPay = actualPay;
-                      let displaySave = save;
 
-                      if (type === 'USD') {
-                        displayActualPay = actualPay / usdRate;
-                        displaySave = save / usdRate;
-                      } else if (type === 'CNY') {
-                        displayValue = preset.value * usdRate;
-                      } else if (type === 'CUSTOM') {
+                      if (type === 'CNY' || type === 'CUSTOM') {
                         displayValue = preset.value * rate;
-                        displayActualPay = (actualPay / usdRate) * rate;
-                        displaySave = (save / usdRate) * rate;
                       }
+                      const quotaLabel =
+                        symbol === '$'
+                          ? `$${formatLargeNumber(displayValue)}`
+                          : `${formatLargeNumber(displayValue)} ${symbol}`;
+                      const payLabel = `¥${actualPay.toFixed(2)}`;
+                      const saveLabel = `¥${save.toFixed(2)}`;
 
                       return (
                         <Card
@@ -682,7 +669,7 @@ const RechargeCard = ({
                               style={{ margin: '0 0 8px 0' }}
                             >
                               <Coins size={18} />
-                              {formatLargeNumber(displayValue)} {symbol}
+                              {t('到账')} {quotaLabel}
                               {hasDiscount && (
                                 <Tag style={{ marginLeft: 4 }} color='green'>
                                   {t('折').includes('off')
@@ -699,11 +686,10 @@ const RechargeCard = ({
                                 margin: '4px 0',
                               }}
                             >
-                              {t('实付')} {symbol}
-                              {displayActualPay.toFixed(2)}，
+                              {t('实付')} {payLabel}，
                               {hasDiscount
-                                ? `${t('节省')} ${symbol}${displaySave.toFixed(2)}`
-                                : `${t('节省')} ${symbol}0.00`}
+                                ? `${t('节省')} ${saveLabel}`
+                                : `${t('节省')} ¥0.00`}
                             </div>
                           </div>
                         </Card>
