@@ -105,6 +105,9 @@ func WeChatAuth(c *gin.Context) {
 			user.Role = common.RoleCommonUser
 			user.Status = common.UserStatusEnabled
 
+			if !middleware.CheckRegisterCreateRateLimit(c) {
+				return
+			}
 			if err := user.Insert(0); err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,

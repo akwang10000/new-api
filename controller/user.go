@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/middleware"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
@@ -165,6 +166,9 @@ func Register(c *gin.Context) {
 	}
 	if common.EmailVerificationEnabled && !common.VerifyAndDeleteCodeWithKey(user.Email, user.VerificationCode, common.EmailVerificationPurpose) {
 		common.ApiErrorI18n(c, i18n.MsgUserVerificationCodeError)
+		return
+	}
+	if !middleware.CheckRegisterCreateRateLimit(c) {
 		return
 	}
 	affCode := user.AffCode // this code is the inviter's code, not the user's own code

@@ -179,6 +179,8 @@ func HandleOAuth(c *gin.Context) {
 				"success": false,
 				"message": err.Error(),
 			})
+		case *OAuthRegistrationRateLimitedError:
+			return
 		default:
 			common.ApiError(c, err)
 		}
@@ -305,6 +307,9 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	if err := consumeOAuthRegistrationTurnstileVerification(session); err != nil {
 		return nil, err
 	}
+	if !middleware.CheckRegisterCreateRateLimit(c) {
+		return nil, &OAuthRegistrationRateLimitedError{}
+	}
 
 	// Set up new user
 	user.Username = provider.GetProviderPrefix() + strconv.Itoa(model.GetMaxUserId()+1)
@@ -416,6 +421,12 @@ type OAuthTurnstileRequiredError struct{}
 
 func (e *OAuthTurnstileRequiredError) Error() string {
 	return "Turnstile verification is required before creating a new account"
+}
+
+type OAuthRegistrationRateLimitedError struct{}
+
+func (e *OAuthRegistrationRateLimitedError) Error() string {
+	return "Too many registration attempts. Please try again later."
 }
 
 // handleOAuthError handles OAuth errors and returns translated message
