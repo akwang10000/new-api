@@ -55,7 +55,7 @@ export function getSystemName() {
 
 export function getLogo() {
   let logo = localStorage.getItem('logo');
-  if (!logo) return '/icon_rounded.png';
+  if (!logo) return '/routeropenai-icon.svg';
   return logo;
 }
 

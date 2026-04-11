@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="routeropenai">
+  <defs>
+    <linearGradient id="bg" x1="32" y1="26" x2="224" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#041a22"/>
+      <stop offset="0.46" stop-color="#072b34"/>
+      <stop offset="1" stop-color="#02070d"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="56" y1="42" x2="200" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9afcff"/>
+      <stop offset="0.48" stop-color="#00e5f4"/>
+      <stop offset="1" stop-color="#19a7ff"/>
+    </linearGradient>
+    <linearGradient id="core" x1="90" y1="68" x2="166" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.54" stop-color="#b8fbff"/>
+      <stop offset="1" stop-color="#49d8ff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0 0 0 0 0 0.8 0 0 0 0 1 0 0 0 0.75 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <path d="M62 74c30-30 76-38 113-18 35 18 55 56 49 95-6 41-39 73-80 78-39 4-75-16-92-51" fill="none" stroke="url(#ring)" stroke-width="14" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M77 94h67c27 0 49 22 49 49v16" fill="none" stroke="url(#ring)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M179 141l16 18 16-18" fill="none" stroke="url(#ring)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M79 163h70c18 0 32-14 32-32s-14-32-32-32h-17" fill="none" stroke="url(#core)" stroke-width="17" stroke-linecap="round"/>
+  <circle cx="77" cy="94" r="17" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="79" cy="163" r="17" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="149" cy="131" r="12" fill="#041a22"/>
+</svg>
