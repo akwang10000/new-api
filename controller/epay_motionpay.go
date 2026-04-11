@@ -34,6 +34,8 @@ type motionPayMAPIResponse struct {
 	URLScheme string          `json:"urlscheme"`
 }
 
+const motionPayUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36"
+
 func isMotionPayGateway(raw string) bool {
 	u, err := url.Parse(raw)
 	if err != nil {
@@ -250,6 +252,9 @@ func requestMotionPayMAPI(c *gin.Context, client *epay.Client, args *epay.Purcha
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("User-Agent", motionPayUserAgent)
+	req.Header.Set("Referer", operation_setting.PayAddress)
 
 	resp, err := service.GetHttpClient().Do(req)
 	if err != nil {
