@@ -9,12 +9,10 @@
       :root {
         --bg: #050912;
         --panel: rgba(5, 17, 29, 0.82);
-        --panel-strong: rgba(8, 22, 38, 0.9);
         --line: rgba(0, 243, 255, 0.14);
         --line-strong: rgba(0, 243, 255, 0.28);
         --text: #f5f7ff;
-        --muted: rgba(228, 234, 255, 0.72);
-        --muted-soft: rgba(228, 234, 255, 0.52);
+        --muted: rgba(228, 234, 255, 0.74);
         --accent: #00f3ff;
         --accent-soft: rgba(0, 243, 255, 0.14);
         --glow: 0 20px 60px rgba(0, 243, 255, 0.12);
@@ -50,22 +48,6 @@
           rgba(0, 0, 0, 0.94),
           rgba(0, 0, 0, 0.58)
         );
-      }
-
-      body::after {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background: repeating-linear-gradient(
-          180deg,
-          rgba(180, 255, 255, 0.028) 0,
-          rgba(180, 255, 255, 0.028) 1px,
-          transparent 2px,
-          transparent 4px
-        );
-        mix-blend-mode: screen;
-        opacity: 0.22;
       }
 
       a {
@@ -153,7 +135,7 @@
       .lang-option {
         border: 0;
         background: transparent;
-        color: var(--muted);
+        color: rgba(228, 234, 255, 0.72);
         padding: 8px 14px;
         border-radius: 999px;
         cursor: pointer;
@@ -169,19 +151,23 @@
         );
       }
 
-      .back-link {
+      .back-link,
+      .top-tab,
+      .hero-tags span,
+      .action,
+      .source-link {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
         padding: 10px 14px;
         border: 1px solid var(--line);
         border-radius: 999px;
         background: rgba(2, 16, 27, 0.68);
-        color: var(--muted);
+        color: rgba(228, 234, 255, 0.78);
       }
 
-      .hero,
-      .panel {
+      .panel,
+      .hero {
         border: 1px solid var(--line);
         border-radius: 28px;
         background: var(--panel);
@@ -189,8 +175,13 @@
         backdrop-filter: blur(18px);
       }
 
-      .hero {
+      .hero,
+      .section {
         padding: 34px;
+      }
+
+      .section {
+        margin-top: 24px;
       }
 
       .eyebrow {
@@ -213,44 +204,35 @@
         line-height: 1.04;
       }
 
-      .hero p {
-        max-width: 820px;
-        margin: 0;
+      h2 {
+        margin: 0 0 18px;
+        font-size: 28px;
+      }
+
+      .hero p,
+      .section p,
+      li {
         color: var(--muted);
-        font-size: 16px;
         line-height: 1.85;
       }
 
       .top-tabs,
       .hero-tags,
-      .actions {
+      .actions,
+      .grid {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
       }
 
-      .top-tabs {
-        margin-top: 24px;
+      .top-tabs,
+      .hero-tags,
+      .actions {
+        margin-top: 22px;
       }
 
-      .top-tab,
-      .hero-tags span,
-      .action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 11px 15px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-
-      .top-tab,
-      .hero-tags span {
-        color: var(--muted);
-      }
-
-      .top-tab.is-active {
+      .top-tab.is-active,
+      .action--primary {
         border-color: var(--line-strong);
         background: linear-gradient(
           135deg,
@@ -260,280 +242,233 @@
         color: var(--text);
       }
 
-      .hero-tags {
-        margin-top: 22px;
-      }
-
-      .actions {
-        margin-top: 22px;
-      }
-
-      .action--primary {
-        border-color: rgba(0, 243, 255, 0.35);
-        background: linear-gradient(
-          135deg,
-          rgba(0, 243, 255, 0.2),
-          rgba(94, 212, 255, 0.08)
-        );
-      }
-
-      .section {
-        margin-top: 22px;
-      }
-
-      .panel {
-        padding: 28px;
-      }
-
-      h2 {
-        margin: 0 0 14px;
-        font-size: 24px;
-      }
-
-      h3 {
-        margin: 0 0 12px;
-        font-size: 18px;
-      }
-
-      p,
-      li {
-        color: var(--muted);
-        line-height: 1.85;
-      }
-
-      ul,
-      ol {
-        margin: 0;
-        padding-left: 22px;
-      }
-
       .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        margin-top: 20px;
         gap: 16px;
       }
 
       .card {
-        min-height: 100%;
-        padding: 22px;
-        border: 1px solid var(--line);
+        flex: 1 1 260px;
+        padding: 20px;
         border-radius: 22px;
-        background: var(--panel-strong);
-      }
-
-      .card-tag {
-        display: inline-block;
-        margin-bottom: 12px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: rgba(0, 243, 255, 0.1);
-        color: var(--accent);
-        font-size: 12px;
-      }
-
-      .callout {
-        margin-top: 16px;
-        padding: 18px 20px;
-        border-left: 4px solid var(--accent);
-        border-radius: 18px;
+        border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.04);
       }
 
-      .code {
-        margin-top: 14px;
-        padding: 18px;
-        border: 1px solid rgba(0, 243, 255, 0.1);
-        border-radius: 18px;
-        background: rgba(0, 0, 0, 0.32);
-        overflow-x: auto;
+      .card-tag {
+        display: inline-flex;
+        margin-bottom: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: rgba(0, 243, 255, 0.08);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
       }
 
-      pre,
-      code {
-        font-family: Consolas, "SFMono-Regular", "Courier New", monospace;
+      .code {
+        margin-top: 16px;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(3, 10, 18, 0.92);
+        overflow-x: auto;
       }
 
       pre {
         margin: 0;
         color: #dffcff;
-        line-height: 1.7;
+        font: 14px/1.7 "Cascadia Code", Consolas, monospace;
         white-space: pre-wrap;
-        word-break: break-word;
+      }
+
+      .callout {
+        margin-top: 16px;
+        padding: 16px 18px;
+        border-left: 3px solid var(--accent);
+        border-radius: 16px;
+        background: rgba(0, 243, 255, 0.08);
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 14px 0 0;
+        padding-left: 20px;
+      }
+
+      .sources {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
       }
 
       .footer {
-        margin-top: 22px;
+        margin-top: 24px;
+        color: rgba(228, 234, 255, 0.62);
         text-align: center;
-        color: var(--muted-soft);
-        font-size: 13px;
-      }
-
-      @media (max-width: 680px) {
-        .page {
-          width: min(100% - 18px, 1120px);
-          padding-top: 18px;
-          padding-bottom: 48px;
-        }
-
-        .header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .hero,
-        .panel {
-          border-radius: 22px;
-          padding: 22px;
-        }
       }
     </style>
     <script>
       window.DOCS_I18N = {
         "zh-CN": {
           page_title: "Claude Code 接入指南",
-          brand_text: "Nerve Centers 文档",
+          brand_text: "routeropenai 文档",
           lang_zh: "中文",
-          lang_en: "英文",
+          lang_en: "English",
           back_docs: "返回文档首页",
-          eyebrow: "Claude Code + 中转层",
-          hero_title: "如何让 Claude Code 用上 Nerve Centers",
+          eyebrow: "Claude Code + Gateway",
+          hero_title: "如何让 Claude Code 接入 routeropenai",
           hero_desc:
-            "先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更好理解的说法是，Claude Code 说的是另一种接口语言，所以中间要先加一层“翻译器”。",
+            "按 Anthropic 官方文档，Claude Code 可对接的不是任意 OpenAI 兼容地址，而是满足 gateway contract 的接口形态。routeropenai 对外主入口是 OpenAI 兼容 `/v1`，所以 Claude Code 要接入它，通常需要一层对外说 Anthropic Messages、对内再转发到 routeropenai `/v1` 的 gateway。",
           tab_home: "文档首页",
           tab_claude: "Claude Code 接入",
           tab_codex: "Codex 接入",
-          hero_tag_route: "推荐链路：Claude Code -> 中转层 -> Nerve Centers",
-          hero_tag_direct: "不能直接连接 OpenAI 兼容地址",
-          hero_tag_translate: "中转层负责转换请求",
+          hero_tag_route: "推荐链路：Claude Code -> Claude-compatible gateway -> routeropenai /v1",
+          hero_tag_direct: "不能直接把 Claude Code 指到 OpenAI 兼容 `/v1`",
+          hero_tag_translate: "对外说 Anthropic，对内连 OpenAI-compatible 上游",
           hero_action: "查看 Codex 指南",
           summary_title: "一分钟结论",
           summary_card_1_tag: "不能直连",
-          summary_card_1_title: "不是地址通了就算接通",
+          summary_card_1_title: "Claude Code 不是 OpenAI-compatible client",
           summary_card_1_desc:
-            "Claude Code 直接指向现有 OpenAI 兼容地址时，常见问题不是域名不通，而是请求格式对不上。",
-          summary_card_2_tag: "中转层",
-          summary_card_2_title: "它的职责很明确",
+            "把 Claude Code 直接指向 `https://routeropenai.xyz/v1`，常见问题不是域名不通，而是它请求的接口契约就不一样。",
+          summary_card_2_tag: "官方要求",
+          summary_card_2_title: "Gateway contract 有明确边界",
           summary_card_2_desc:
-            "中转层只负责把 Claude Code 发出的请求，改写成 Nerve Centers 能识别和接收的格式。",
-          summary_card_3_tag: "现有网关",
-          summary_card_3_title: "原有能力继续保留",
+            "Anthropic 官方要求 gateway 至少暴露一种受支持的接口形态，其中最常见的是 Anthropic Messages：`/v1/messages` 与 `/v1/messages/count_tokens`。",
+          summary_card_3_tag: "routeropenai",
+          summary_card_3_title: "上游聚合能力仍可复用",
           summary_card_3_desc:
-            "模型映射、令牌校验、日志和计费能力仍然放在 Nerve Centers，不需要重做一套。",
+            "模型路由、供应商聚合和上游访问仍可放在 routeropenai；只是 Claude Code 前面需要一层说 Anthropic 协议的 gateway。",
           why_title: "为什么不能直接连",
           why_intro:
-            "这件事最容易理解的方式，不是去谈底层协议细节，而是把它看成“双方说的不是同一种话”：",
-          why_li_1: "Claude Code 默认期待的是它自己的那套接口格式。",
-          why_li_2: "Nerve Centers 当前对外提供的是 OpenAI 兼容接口。",
-          why_li_3:
-            "所以 Claude Code 直接去连 Nerve Centers，通常会表现成地址能访问，但请求无法正确处理。",
+            "更准确的说法不是“Claude Code 需要随便一个中转层”，而是“Claude Code 需要一个满足官方 gateway contract 的接口层”：",
+          why_li_1: "Anthropic 官方支持的 gateway 形态包括 Anthropic Messages、Bedrock InvokeModel 或 Vertex rawPredict。",
+          why_li_2: "如果走 Anthropic Messages 形态，至少要提供 `/v1/messages` 与 `/v1/messages/count_tokens`，并转发 `anthropic-beta`、`anthropic-version` 这些头。",
+          why_li_3: "OpenAI 兼容 `/v1/chat/completions` 不在 Claude Code 官方支持的直接接入列表里，所以不能把 Claude Code 当作普通 OpenAI 客户端来配。",
           why_callout_html:
-            "<strong>可以把它理解成翻译问题：</strong> Claude Code 先把请求发给中转层，中转层再把它翻译成 Nerve Centers 能处理的格式。",
+            "<strong>结论：</strong> Claude Code 接入 OpenAI 兼容上游时，准确做法不是“直接改个 base_url”，而是先放一层满足 Claude Code contract 的 gateway，再由它去调用 routeropenai 的 OpenAI 兼容接口。",
           flow_title: "推荐接法",
           flow_desc:
-            "正确做法不是强行直连，而是先放一层中转服务，再把请求导向现有网关：",
-          flow_code: "Claude Code\n  -> 中转层\n  -> Nerve Centers /v1",
-          flow_points_1: "Claude Code 只连接中转层。",
-          flow_points_2: "中转层再去连接 Nerve Centers。",
-          flow_points_3: "Nerve Centers 继续负责模型调用、权限校验、计费和日志。",
+            "生产可落地的链路是：Claude Code 对 gateway 说 Anthropic 协议，gateway 再去调用 routeropenai 的 OpenAI 兼容 `/v1`：",
+          flow_code: "Claude Code\n  -> Claude-compatible gateway (/v1/messages, /v1/messages/count_tokens)\n  -> routeropenai /v1",
+          flow_points_1: "Claude Code 通过 `ANTHROPIC_BASE_URL` 指向 gateway，而不是 `https://routeropenai.xyz/v1`。",
+          flow_points_2: "gateway 对外暴露 Claude Code 需要的接口形态，对内把请求翻译并转发给 routeropenai。",
+          flow_points_3: "routeropenai 继续负责上游模型聚合、渠道配置与实际模型调用。",
           prep_title: "你需要准备什么",
-          prep_li_1: "一个可用的 Nerve Centers 令牌。",
-          prep_li_2: "一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。",
-          prep_li_3: "一层放在 Claude Code 和 Nerve Centers 中间的中转服务。",
+          prep_li_1: "一个可用的 routeropenai 令牌，供 gateway 访问 `https://routeropenai.xyz/v1`。",
+          prep_li_2: "一个满足 Claude Code 官方要求的 gateway，例如能提供 Anthropic Messages 端点的代理层。",
+          prep_li_3: "Claude Code 中把 `ANTHROPIC_BASE_URL` 指向这个 gateway，并提供 `ANTHROPIC_AUTH_TOKEN` 或等效认证方式。",
           prep_callout_html:
-            "<strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补一层中转，让它能顺利把请求送进来。",
+            "<strong>不要写成直连 OpenAI 兼容地址：</strong> 如果你的层只会暴露 `/v1/chat/completions` 这类 OpenAI 兼容路径，它对 Codex 没问题，但对 Claude Code 仍然不够。",
+          source_title: "官方参考",
+          source_desc:
+            "下方链接对应 Anthropic 官方关于 Claude Code gateway 的要求说明。",
+          official_label: "Anthropic 官方 Claude Code gateway 文档",
+          env_title: "Claude Code 侧典型配置",
+          env_desc:
+            "下面只是方向示例：Claude Code 指向 gateway，gateway 再指向 routeropenai `/v1`。不要把 `ANTHROPIC_BASE_URL` 直接写成 `https://routeropenai.xyz/v1`。",
           check_title: "怎么判断已经接对",
           check_card_1_tag: "检查 1",
           check_card_1_title: "Claude Code 能正常启动",
           check_card_1_desc:
-            "启动时不再卡在认证错误或请求格式错误，而是能正常进入工作流。",
+            "启动时不再卡在协议不兼容、认证失败或 request-format 错误，而是能进入正常工作流。",
           check_card_2_tag: "检查 2",
-          check_card_2_title: "中转层能看到请求",
+          check_card_2_title: "gateway 能看到 `/v1/messages` 请求",
           check_card_2_desc:
-            "这说明 Claude Code 已经命中了中间层，而不是直接打到了错误地址。",
+            "这说明 Claude Code 已经命中了符合 contract 的中间层，而不是误打到 OpenAI 兼容入口。",
           check_card_3_tag: "检查 3",
-          check_card_3_title: "Nerve Centers 有真实调用",
+          check_card_3_title: "routeropenai 有真实上游调用",
           check_card_3_desc:
-            "如果中转层配置正确，你会在 Nerve Centers 一侧看到实际模型调用记录。",
+            "如果 gateway 配置正确，你会在 routeropenai 一侧看到真实模型调用记录。",
           pitfall_title: "常见误区",
-          pitfall_li_1: "把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。",
-          pitfall_li_2: "以为模型名对上了就能用，实际上接口格式不匹配也不行。",
-          pitfall_li_3: "把 Codex 的直连方案原样照搬到 Claude Code。",
+          pitfall_li_1: "把 Claude Code 直接指向 `https://routeropenai.xyz/v1`。",
+          pitfall_li_2: "只做了 `/v1/messages`，却漏掉 `/v1/messages/count_tokens` 或漏传 `anthropic-*` 头，导致部分功能失效。",
+          pitfall_li_3: "把 Codex 的 OpenAI 直连方案原样照搬到 Claude Code。",
           footer_text:
-            "本页只解决一个核心问题：Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。",
+            "本页只讲一个核心点：Claude Code 连接 OpenAI 兼容上游时，需要的是满足 Anthropic 官方 contract 的 gateway，而不是把 OpenAI 兼容地址直接填进去。"
         },
         en: {
           page_title: "Claude Code Integration Guide",
-          brand_text: "Nerve Centers Docs",
-          lang_zh: "Chinese",
+          brand_text: "routeropenai Docs",
+          lang_zh: "中文",
           lang_en: "English",
           back_docs: "Back to Docs Home",
-          eyebrow: "Claude Code + Middleware",
-          hero_title: "How to use Claude Code with Nerve Centers",
+          eyebrow: "Claude Code + Gateway",
+          hero_title: "How to connect Claude Code to routeropenai",
           hero_desc:
-            "Short version: Claude Code cannot connect to the Nerve Centers OpenAI-compatible endpoint the same way Codex can. The simplest way to think about it is that Claude Code speaks a different interface language, so you need a translator layer in the middle.",
+            "Per Anthropic's official docs, Claude Code does not connect to an arbitrary OpenAI-compatible endpoint. It expects a supported gateway contract. Since routeropenai's public entrypoint is the OpenAI-compatible `/v1`, the practical setup is a gateway that speaks Anthropic Messages outward and forwards to routeropenai `/v1` inward.",
           tab_home: "Docs Home",
           tab_claude: "Claude Code",
           tab_codex: "Codex",
-          hero_tag_route: "Recommended flow: Claude Code -> Middleware -> Nerve Centers",
-          hero_tag_direct: "Cannot use the OpenAI-compatible endpoint directly",
-          hero_tag_translate: "The middleware translates requests",
+          hero_tag_route: "Recommended flow: Claude Code -> Claude-compatible gateway -> routeropenai /v1",
+          hero_tag_direct: "Do not point Claude Code directly at the OpenAI-compatible `/v1`",
+          hero_tag_translate: "Anthropic outward, OpenAI-compatible inward",
           hero_action: "View Codex Guide",
           summary_title: "One-minute summary",
           summary_card_1_tag: "No direct access",
-          summary_card_1_title: "A reachable URL is not enough",
+          summary_card_1_title: "Claude Code is not a generic OpenAI-compatible client",
           summary_card_1_desc:
-            "When Claude Code points straight at the current OpenAI-compatible URL, the main problem is usually not DNS or connectivity. It is the request format.",
-          summary_card_2_tag: "Middleware",
-          summary_card_2_title: "Its role is narrow and clear",
+            "Pointing Claude Code directly at `https://routeropenai.xyz/v1` usually fails not because of DNS, but because the required API contract is different.",
+          summary_card_2_tag: "Official contract",
+          summary_card_2_title: "The gateway requirements are explicit",
           summary_card_2_desc:
-            "The middleware only rewrites requests from Claude Code into a shape Nerve Centers can accept.",
-          summary_card_3_tag: "Existing gateway",
-          summary_card_3_title: "The current gateway still does the real work",
+            "Anthropic's docs require the gateway to expose at least one supported API shape. The most common option is Anthropic Messages: `/v1/messages` and `/v1/messages/count_tokens`.",
+          summary_card_3_tag: "routeropenai",
+          summary_card_3_title: "The upstream aggregation layer still stays useful",
           summary_card_3_desc:
-            "Model mapping, token validation, logs, and billing all stay in Nerve Centers. You do not need a replacement stack.",
+            "Model routing, provider aggregation, and upstream access can still live in routeropenai. Claude Code simply needs a gateway in front that speaks the contract it expects.",
           why_title: "Why direct connection fails",
           why_intro:
-            "The easiest explanation is not low-level protocol theory. It is simply that the two sides do not speak the same request shape:",
-          why_li_1: "Claude Code expects its own interface format.",
-          why_li_2: "Nerve Centers currently exposes an OpenAI-compatible API.",
-          why_li_3:
-            "So Claude Code may reach the domain successfully while the request itself still fails.",
+            "The accurate explanation is not just 'use some middleware'. It is 'use a gateway that matches Claude Code's official contract':",
+          why_li_1: "Anthropic officially supports gateways exposing Anthropic Messages, Bedrock InvokeModel, or Vertex rawPredict shapes.",
+          why_li_2: "For Anthropic Messages, the gateway must provide `/v1/messages` and `/v1/messages/count_tokens`, and forward headers such as `anthropic-beta` and `anthropic-version`.",
+          why_li_3: "A generic OpenAI-compatible `/v1/chat/completions` endpoint is not on Claude Code's official direct-support list.",
           why_callout_html:
-            "<strong>Think of it as a translation problem:</strong> Claude Code talks to the middleware first, and the middleware rewrites the request for Nerve Centers.",
+            "<strong>Bottom line:</strong> when Claude Code needs to reach an OpenAI-compatible upstream, the correct setup is not 'change the base URL'. The correct setup is 'place a gateway that satisfies Claude Code's contract in front, and let it call routeropenai'.",
           flow_title: "Recommended setup",
           flow_desc:
-            "The production-friendly route is not forced direct access. Put a middleware layer in front of the current gateway:",
-          flow_code: "Claude Code\n  -> Middleware\n  -> Nerve Centers /v1",
-          flow_points_1: "Claude Code connects only to the middleware.",
-          flow_points_2: "The middleware then connects to Nerve Centers.",
-          flow_points_3:
-            "Nerve Centers still handles model access, auth checks, billing, and logs.",
+            "The production-friendly route is: Claude Code talks Anthropic protocol to the gateway, and the gateway then calls routeropenai's OpenAI-compatible `/v1`:",
+          flow_code: "Claude Code\n  -> Claude-compatible gateway (/v1/messages, /v1/messages/count_tokens)\n  -> routeropenai /v1",
+          flow_points_1: "Claude Code points `ANTHROPIC_BASE_URL` at the gateway, not at `https://routeropenai.xyz/v1`.",
+          flow_points_2: "The gateway exposes the contract Claude Code expects and translates requests before forwarding them to routeropenai.",
+          flow_points_3: "routeropenai still handles upstream model aggregation, channel configuration, and the actual model calls.",
           prep_title: "What you need",
-          prep_li_1: "A valid Nerve Centers token.",
-          prep_li_2: "A reachable OpenAI-compatible endpoint such as `https://robot2.indevs.in/v1`.",
-          prep_li_3: "A middleware service placed between Claude Code and Nerve Centers.",
+          prep_li_1: "A valid routeropenai token for the gateway to access `https://routeropenai.xyz/v1`.",
+          prep_li_2: "A gateway that satisfies Claude Code's official requirements, such as an Anthropic Messages-compatible proxy.",
+          prep_li_3: "Claude Code configured to point `ANTHROPIC_BASE_URL` at that gateway, plus `ANTHROPIC_AUTH_TOKEN` or an equivalent auth method.",
           prep_callout_html:
-            "<strong>The goal is not to replace Nerve Centers:</strong> you are only adding one layer in front so Claude Code can speak to it correctly.",
+            "<strong>Do not document this as direct OpenAI access:</strong> a layer that only exposes `/v1/chat/completions` may be fine for Codex, but it is still not sufficient for Claude Code.",
+          source_title: "Official reference",
+          source_desc:
+            "The link below points to Anthropic's official Claude Code gateway requirements.",
+          official_label: "Anthropic official Claude Code gateway docs",
+          env_title: "Typical Claude Code side config",
+          env_desc:
+            "This is only the direction of the setup: Claude Code points at the gateway, and the gateway points at routeropenai `/v1`. Do not set `ANTHROPIC_BASE_URL` directly to `https://routeropenai.xyz/v1`.",
           check_title: "How to tell it is wired correctly",
           check_card_1_tag: "Check 1",
           check_card_1_title: "Claude Code starts normally",
           check_card_1_desc:
-            "It should no longer fail immediately on auth or request-format problems and should enter its normal workflow.",
+            "It no longer fails immediately on protocol mismatch, auth, or request-format errors and enters the normal workflow.",
           check_card_2_tag: "Check 2",
-          check_card_2_title: "The middleware receives requests",
+          check_card_2_title: "The gateway receives `/v1/messages` traffic",
           check_card_2_desc:
-            "That shows Claude Code is hitting the middle layer rather than the wrong endpoint.",
+            "That shows Claude Code is hitting a compatible gateway rather than the OpenAI-compatible entrypoint by mistake.",
           check_card_3_tag: "Check 3",
-          check_card_3_title: "Nerve Centers sees real traffic",
+          check_card_3_title: "routeropenai sees real upstream calls",
           check_card_3_desc:
-            "If the middleware is configured correctly, you should see actual model calls on the Nerve Centers side.",
+            "If the gateway is configured correctly, you should see actual model calls on the routeropenai side.",
           pitfall_title: "Common mistakes",
-          pitfall_li_1: "Pointing Claude Code directly at `https://robot2.indevs.in/v1`.",
-          pitfall_li_2: "Assuming the right model name is enough when the request format is still incompatible.",
-          pitfall_li_3: "Copying the Codex direct-access setup into Claude Code.",
+          pitfall_li_1: "Pointing Claude Code directly at `https://routeropenai.xyz/v1`.",
+          pitfall_li_2: "Implementing only `/v1/messages` but missing `/v1/messages/count_tokens` or the required `anthropic-*` headers.",
+          pitfall_li_3: "Copying the Codex OpenAI direct-access setup into Claude Code.",
           footer_text:
-            "This page focuses on one core point: why Claude Code needs a middleware layer when integrating with Nerve Centers.",
-        },
+            "This page focuses on one core point: when Claude Code targets an OpenAI-compatible upstream, it needs a gateway that satisfies Anthropic's official contract rather than a direct `/v1` OpenAI endpoint."
+        }
       };
     </script>
   </head>
@@ -544,67 +479,43 @@
     <main class="page">
       <header class="header">
         <a class="brand" href="/">
-          <img src="/icon_rounded.png" alt="Nerve Centers" />
-          <span data-i18n="brand_text">Nerve Centers 文档</span>
+          <img src="/icon_rounded.png" alt="routeropenai" />
+          <span data-i18n="brand_text">routeropenai 文档</span>
         </a>
         <div class="header-actions">
           <div class="lang-switch" aria-label="Language switcher">
-            <button
-              class="lang-option"
-              type="button"
-              data-lang-option="zh-CN"
-              aria-pressed="false"
-            >
+            <button class="lang-option" type="button" data-lang-option="zh-CN">
               <span data-i18n="lang_zh">中文</span>
             </button>
-            <button
-              class="lang-option"
-              type="button"
-              data-lang-option="en"
-              aria-pressed="false"
-            >
+            <button class="lang-option" type="button" data-lang-option="en">
               <span data-i18n="lang_en">English</span>
             </button>
           </div>
-          <a class="back-link" href="/docs-home.html" data-keep-lang data-i18n="back_docs"
-            >返回文档首页</a
-          >
+          <a class="back-link" href="/docs-home.html" data-keep-lang data-i18n="back_docs">返回文档首页</a>
         </div>
       </header>
 
       <section class="hero">
-        <span class="eyebrow" data-i18n="eyebrow">Claude Code + 中转层</span>
-        <h1 data-i18n="hero_title">如何让 Claude Code 用上 Nerve Centers</h1>
+        <span class="eyebrow" data-i18n="eyebrow">Claude Code + Gateway</span>
+        <h1 data-i18n="hero_title">如何让 Claude Code 接入 routeropenai</h1>
         <p data-i18n="hero_desc">
-          先说结论：Claude Code 不能像 Codex 一样直接连接 Nerve Centers 的 OpenAI 兼容接口。更好理解的说法是，Claude Code 说的是另一种接口语言，所以中间要先加一层“翻译器”。
+          按 Anthropic 官方文档，Claude Code 可对接的不是任意 OpenAI 兼容地址，而是满足 gateway contract 的接口形态。routeropenai 对外主入口是 OpenAI 兼容 `/v1`，所以 Claude Code 要接入它，通常需要一层对外说 Anthropic Messages、对内再转发到 routeropenai `/v1` 的 gateway。
         </p>
 
         <div class="top-tabs">
-          <a class="top-tab" href="/docs-home.html" data-keep-lang>
-            <span data-i18n="tab_home">文档首页</span>
-          </a>
-          <a class="top-tab is-active" href="/docs-claude-code.html" data-keep-lang>
-            <span data-i18n="tab_claude">Claude Code 接入</span>
-          </a>
-          <a class="top-tab" href="/docs-codex-openai.html" data-keep-lang>
-            <span data-i18n="tab_codex">Codex 接入</span>
-          </a>
+          <a class="top-tab" href="/docs-home.html" data-keep-lang><span data-i18n="tab_home">文档首页</span></a>
+          <a class="top-tab is-active" href="/docs-claude-code.html" data-keep-lang><span data-i18n="tab_claude">Claude Code 接入</span></a>
+          <a class="top-tab" href="/docs-codex-openai.html" data-keep-lang><span data-i18n="tab_codex">Codex 接入</span></a>
         </div>
 
         <div class="hero-tags">
-          <span data-i18n="hero_tag_route">推荐链路：Claude Code -> 中转层 -> Nerve Centers</span>
-          <span data-i18n="hero_tag_direct">不能直接连接 OpenAI 兼容地址</span>
-          <span data-i18n="hero_tag_translate">中转层负责转换请求</span>
+          <span data-i18n="hero_tag_route">推荐链路：Claude Code -> Claude-compatible gateway -> routeropenai /v1</span>
+          <span data-i18n="hero_tag_direct">不能直接把 Claude Code 指到 OpenAI 兼容 `/v1`</span>
+          <span data-i18n="hero_tag_translate">对外说 Anthropic，对内连 OpenAI-compatible 上游</span>
         </div>
 
         <div class="actions">
-          <a
-            class="action action--primary"
-            href="/docs-codex-openai.html"
-            data-keep-lang
-            data-i18n="hero_action"
-            >查看 Codex 指南</a
-          >
+          <a class="action action--primary" href="/docs-codex-openai.html" data-keep-lang data-i18n="hero_action">查看 Codex 指南</a>
         </div>
       </section>
 
@@ -613,71 +524,81 @@
         <div class="grid">
           <article class="card">
             <span class="card-tag" data-i18n="summary_card_1_tag">不能直连</span>
-            <h3 data-i18n="summary_card_1_title">不是地址通了就算接通</h3>
-            <p data-i18n="summary_card_1_desc">
-              Claude Code 直接指向现有 OpenAI 兼容地址时，常见问题不是域名不通，而是请求格式对不上。
-            </p>
+            <h3 data-i18n="summary_card_1_title">Claude Code 不是 OpenAI-compatible client</h3>
+            <p data-i18n="summary_card_1_desc">把 Claude Code 直接指向 `https://routeropenai.xyz/v1`，常见问题不是域名不通，而是它请求的接口契约就不一样。</p>
           </article>
           <article class="card">
-            <span class="card-tag" data-i18n="summary_card_2_tag">中转层</span>
-            <h3 data-i18n="summary_card_2_title">它的职责很明确</h3>
-            <p data-i18n="summary_card_2_desc">
-              中转层只负责把 Claude Code 发出的请求，改写成 Nerve Centers 能识别和接收的格式。
-            </p>
+            <span class="card-tag" data-i18n="summary_card_2_tag">官方要求</span>
+            <h3 data-i18n="summary_card_2_title">Gateway contract 有明确边界</h3>
+            <p data-i18n="summary_card_2_desc">Anthropic 官方要求 gateway 至少暴露一种受支持的接口形态，其中最常见的是 Anthropic Messages：`/v1/messages` 与 `/v1/messages/count_tokens`。</p>
           </article>
           <article class="card">
-            <span class="card-tag" data-i18n="summary_card_3_tag">现有网关</span>
-            <h3 data-i18n="summary_card_3_title">原有能力继续保留</h3>
-            <p data-i18n="summary_card_3_desc">
-              模型映射、令牌校验、日志和计费能力仍然放在 Nerve Centers，不需要重做一套。
-            </p>
+            <span class="card-tag" data-i18n="summary_card_3_tag">routeropenai</span>
+            <h3 data-i18n="summary_card_3_title">上游聚合能力仍可复用</h3>
+            <p data-i18n="summary_card_3_desc">模型路由、供应商聚合和上游访问仍可放在 routeropenai；只是 Claude Code 前面需要一层说 Anthropic 协议的 gateway。</p>
           </article>
         </div>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="why_title">为什么不能直接连</h2>
-        <p data-i18n="why_intro">
-          这件事最容易理解的方式，不是去谈底层协议细节，而是把它看成“双方说的不是同一种话”：
-        </p>
+        <p data-i18n="why_intro">更准确的说法不是“Claude Code 需要随便一个中转层”，而是“Claude Code 需要一个满足官方 gateway contract 的接口层”：</p>
         <ul>
-          <li data-i18n="why_li_1">Claude Code 默认期待的是它自己的那套接口格式。</li>
-          <li data-i18n="why_li_2">Nerve Centers 当前对外提供的是 OpenAI 兼容接口。</li>
-          <li data-i18n="why_li_3">
-            所以 Claude Code 直接去连 Nerve Centers，通常会表现成地址能访问，但请求无法正确处理。
-          </li>
+          <li data-i18n="why_li_1">Anthropic 官方支持的 gateway 形态包括 Anthropic Messages、Bedrock InvokeModel 或 Vertex rawPredict。</li>
+          <li data-i18n="why_li_2">如果走 Anthropic Messages 形态，至少要提供 `/v1/messages` 与 `/v1/messages/count_tokens`，并转发 `anthropic-beta`、`anthropic-version` 这些头。</li>
+          <li data-i18n="why_li_3">OpenAI 兼容 `/v1/chat/completions` 不在 Claude Code 官方支持的直接接入列表里，所以不能把 Claude Code 当作普通 OpenAI 客户端来配。</li>
         </ul>
         <div class="callout" data-i18n-html="why_callout_html">
-          <strong>可以把它理解成翻译问题：</strong> Claude Code 先把请求发给中转层，中转层再把它翻译成 Nerve Centers 能处理的格式。
+          <strong>结论：</strong> Claude Code 接入 OpenAI 兼容上游时，准确做法不是“直接改个 base_url”，而是先放一层满足 Claude Code contract 的 gateway，再由它去调用 routeropenai 的 OpenAI 兼容接口。
         </div>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="flow_title">推荐接法</h2>
-        <p data-i18n="flow_desc">
-          正确做法不是强行直连，而是先放一层中转服务，再把请求导向现有网关：
-        </p>
+        <p data-i18n="flow_desc">生产可落地的链路是：Claude Code 对 gateway 说 Anthropic 协议，gateway 再去调用 routeropenai 的 OpenAI 兼容 `/v1`：</p>
         <div class="code">
           <pre data-i18n="flow_code">Claude Code
-  -> 中转层
-  -> Nerve Centers /v1</pre>
+  -> Claude-compatible gateway (/v1/messages, /v1/messages/count_tokens)
+  -> routeropenai /v1</pre>
         </div>
         <ul>
-          <li data-i18n="flow_points_1">Claude Code 只连接中转层。</li>
-          <li data-i18n="flow_points_2">中转层再去连接 Nerve Centers。</li>
-          <li data-i18n="flow_points_3">Nerve Centers 继续负责模型调用、权限校验、计费和日志。</li>
+          <li data-i18n="flow_points_1">Claude Code 通过 `ANTHROPIC_BASE_URL` 指向 gateway，而不是 `https://routeropenai.xyz/v1`。</li>
+          <li data-i18n="flow_points_2">gateway 对外暴露 Claude Code 需要的接口形态，对内把请求翻译并转发给 routeropenai。</li>
+          <li data-i18n="flow_points_3">routeropenai 继续负责上游模型聚合、渠道配置与实际模型调用。</li>
         </ul>
       </section>
 
       <section class="section panel">
         <h2 data-i18n="prep_title">你需要准备什么</h2>
         <ol>
-          <li data-i18n="prep_li_1">一个可用的 Nerve Centers 令牌。</li>
-          <li data-i18n="prep_li_2">一个可访问的 OpenAI 兼容地址，例如 `https://robot2.indevs.in/v1`。</li>
-          <li data-i18n="prep_li_3">一层放在 Claude Code 和 Nerve Centers 中间的中转服务。</li>
+          <li data-i18n="prep_li_1">一个可用的 routeropenai 令牌，供 gateway 访问 `https://routeropenai.xyz/v1`。</li>
+          <li data-i18n="prep_li_2">一个满足 Claude Code 官方要求的 gateway，例如能提供 Anthropic Messages 端点的代理层。</li>
+          <li data-i18n="prep_li_3">Claude Code 中把 `ANTHROPIC_BASE_URL` 指向这个 gateway，并提供 `ANTHROPIC_AUTH_TOKEN` 或等效认证方式。</li>
         </ol>
         <div class="callout" data-i18n-html="prep_callout_html">
-          <strong>重点不是替换 Nerve Centers：</strong> 只是给 Claude Code 前面补一层中转，让它能顺利把请求送进来。
+          <strong>不要写成直连 OpenAI 兼容地址：</strong> 如果你的层只会暴露 `/v1/chat/completions` 这类 OpenAI 兼容路径，它对 Codex 没问题，但对 Claude Code 仍然不够。
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="source_title">官方参考</h2>
+        <p data-i18n="source_desc">下方链接对应 Anthropic 官方关于 Claude Code gateway 的要求说明。</p>
+        <div class="sources">
+          <a class="source-link" href="https://docs.anthropic.com/en/docs/claude-code/llm-gateway" target="_blank" rel="noreferrer" data-i18n="official_label">Anthropic 官方 Claude Code gateway 文档</a>
+        </div>
+      </section>
+
+      <section class="section panel">
+        <h2 data-i18n="env_title">Claude Code 侧典型配置</h2>
+        <p data-i18n="env_desc">下面只是方向示例：Claude Code 指向 gateway，gateway 再指向 routeropenai `/v1`。不要把 `ANTHROPIC_BASE_URL` 直接写成 `https://routeropenai.xyz/v1`。</p>
+        <div class="code">
+          <pre># Claude Code side
+export ANTHROPIC_BASE_URL=https://your-gateway.example.com
+export ANTHROPIC_AUTH_TOKEN=your-gateway-token
+
+# Gateway side
+UPSTREAM_OPENAI_BASE_URL=https://routeropenai.xyz/v1
+UPSTREAM_OPENAI_API_KEY=sk-your-routeropenai-token</pre>
         </div>
       </section>
 
@@ -687,23 +608,17 @@
           <article class="card">
             <span class="card-tag" data-i18n="check_card_1_tag">检查 1</span>
             <h3 data-i18n="check_card_1_title">Claude Code 能正常启动</h3>
-            <p data-i18n="check_card_1_desc">
-              启动时不再卡在认证错误或请求格式错误，而是能正常进入工作流。
-            </p>
+            <p data-i18n="check_card_1_desc">启动时不再卡在协议不兼容、认证失败或 request-format 错误，而是能进入正常工作流。</p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="check_card_2_tag">检查 2</span>
-            <h3 data-i18n="check_card_2_title">中转层能看到请求</h3>
-            <p data-i18n="check_card_2_desc">
-              这说明 Claude Code 已经命中了中间层，而不是直接打到了错误地址。
-            </p>
+            <h3 data-i18n="check_card_2_title">gateway 能看到 `/v1/messages` 请求</h3>
+            <p data-i18n="check_card_2_desc">这说明 Claude Code 已经命中了符合 contract 的中间层，而不是误打到 OpenAI 兼容入口。</p>
           </article>
           <article class="card">
             <span class="card-tag" data-i18n="check_card_3_tag">检查 3</span>
-            <h3 data-i18n="check_card_3_title">Nerve Centers 有真实调用</h3>
-            <p data-i18n="check_card_3_desc">
-              如果中转层配置正确，你会在 Nerve Centers 一侧看到实际模型调用记录。
-            </p>
+            <h3 data-i18n="check_card_3_title">routeropenai 有真实上游调用</h3>
+            <p data-i18n="check_card_3_desc">如果 gateway 配置正确，你会在 routeropenai 一侧看到真实模型调用记录。</p>
           </article>
         </div>
       </section>
@@ -711,14 +626,14 @@
       <section class="section panel">
         <h2 data-i18n="pitfall_title">常见误区</h2>
         <ul>
-          <li data-i18n="pitfall_li_1">把 Claude Code 直接指向 `https://robot2.indevs.in/v1`。</li>
-          <li data-i18n="pitfall_li_2">以为模型名对上了就能用，实际上接口格式不匹配也不行。</li>
-          <li data-i18n="pitfall_li_3">把 Codex 的直连方案原样照搬到 Claude Code。</li>
+          <li data-i18n="pitfall_li_1">把 Claude Code 直接指向 `https://routeropenai.xyz/v1`。</li>
+          <li data-i18n="pitfall_li_2">只做了 `/v1/messages`，却漏掉 `/v1/messages/count_tokens` 或漏传 `anthropic-*` 头，导致部分功能失效。</li>
+          <li data-i18n="pitfall_li_3">把 Codex 的 OpenAI 直连方案原样照搬到 Claude Code。</li>
         </ul>
       </section>
 
       <footer class="footer" data-i18n="footer_text">
-        本页只解决一个核心问题：Claude Code 接入 Nerve Centers 时，为什么中间需要一层中转服务。
+        本页只讲一个核心点：Claude Code 连接 OpenAI 兼容上游时，需要的是满足 Anthropic 官方 contract 的 gateway，而不是把 OpenAI 兼容地址直接填进去。
       </footer>
     </main>
 

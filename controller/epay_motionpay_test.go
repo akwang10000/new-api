@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/Calcium-Ion/go-epay/epay"
@@ -48,5 +51,23 @@ func TestValidateMotionPayCheckout(t *testing.T) {
 		PayLinkType: "url",
 	}); err == nil {
 		t.Fatal("expected untrusted link to be rejected")
+	}
+}
+
+func TestDecodeMotionPayMAPIResponseNonJSON(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/html; charset=UTF-8"}},
+		Body:       io.NopCloser(strings.NewReader("<html><body>blocked</body></html>")),
+	}
+
+	var payload motionPayMAPIResponse
+	err := decodeMotionPayMAPIResponse(resp, &payload)
+	if err == nil {
+		t.Fatal("expected non-json response to return error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "non-JSON") || !strings.Contains(msg, "blocked") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

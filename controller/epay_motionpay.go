@@ -3,6 +3,7 @@ package controller
 import (
 	json "encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -186,6 +187,38 @@ func pickMotionPayCheckout(candidates ...*EpayCheckoutResponse) *EpayCheckoutRes
 	return nil
 }
 
+func summarizeMotionPayBody(body []byte) string {
+	summary := strings.Join(strings.Fields(string(body)), " ")
+	const maxLen = 200
+	if len(summary) > maxLen {
+		summary = summary[:maxLen] + "..."
+	}
+	if summary == "" {
+		return "<empty>"
+	}
+	return summary
+}
+
+func decodeMotionPayMAPIResponse(resp *http.Response, payload *motionPayMAPIResponse) error {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read motionpay response failed: %w", err)
+	}
+	if err = common.Unmarshal(body, payload); err != nil {
+		contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = "unknown"
+		}
+		return fmt.Errorf(
+			"motionpay returned non-JSON response: status=%d content-type=%s body=%q",
+			resp.StatusCode,
+			contentType,
+			summarizeMotionPayBody(body),
+		)
+	}
+	return nil
+}
+
 func requestMotionPayMAPI(c *gin.Context, client *epay.Client, args *epay.PurchaseArgs) (*EpayCheckoutResponse, error) {
 	mapiURL := *client.BaseUrl
 	mapiURL.Path = path.Join(mapiURL.Path, "/mapi.php")
@@ -225,8 +258,8 @@ func requestMotionPayMAPI(c *gin.Context, client *epay.Client, args *epay.Purcha
 	defer resp.Body.Close()
 
 	var payload motionPayMAPIResponse
-	if err = common.DecodeJson(resp.Body, &payload); err != nil {
-		return nil, fmt.Errorf("decode motionpay response failed: %w", err)
+	if err = decodeMotionPayMAPIResponse(resp, &payload); err != nil {
+		return nil, err
 	}
 	if !isMotionPaySuccessCode(payload.Code) {
 		msg := strings.TrimSpace(payload.Msg)

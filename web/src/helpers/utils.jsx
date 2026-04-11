@@ -49,7 +49,7 @@ export function isRoot() {
 
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
-  if (!system_name) return 'Nerve Centers';
+  if (!system_name) return 'routeropenai';
   return system_name;
 }
 
