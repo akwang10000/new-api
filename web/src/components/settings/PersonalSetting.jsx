@@ -34,8 +34,7 @@ import {
 import { UserContext } from '../../context/User';
 import { Modal } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-
-// 闂佽娴烽弫鎼佸储瑜斿畷锝夊幢濞嗗苯浜炬繛鎴炵懃婵绱掗鑲┬ｇ紒?import UserInfoHeader from './personal/components/UserInfoHeader';
+import UserInfoHeader from './personal/components/UserInfoHeader';
 import AccountManagement from './personal/cards/AccountManagement';
 import NotificationSettings from './personal/cards/NotificationSettings';
 import PreferencesSettings from './personal/cards/PreferencesSettings';
