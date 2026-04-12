@@ -17,65 +17,130 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTokenKeys } from '../../hooks/chat/useTokenKeys';
-import { Spin } from '@douyinfe/semi-ui';
+import {
+  Banner,
+  Button,
+  Card,
+  Input,
+  Space,
+  Spin,
+  Typography,
+} from '@douyinfe/semi-ui';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  buildChatIntegrationLink,
+  copy,
+  isWebChatIntegrationLink,
+  showError,
+  showSuccess,
+} from '../../helpers';
+
+const getChatConfig = (id) => {
+  const chats = localStorage.getItem('chats');
+  if (!chats) return null;
+
+  try {
+    const parsed = JSON.parse(chats);
+    const item = parsed?.[Number(id)];
+    const name = item ? Object.keys(item)[0] : '';
+    const template = name ? item[name] : '';
+    if (!name || !template) return null;
+    return { name, template };
+  } catch (_) {
+    return null;
+  }
+};
 
 const ChatPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const { keys, serverAddress, isLoading } = useTokenKeys(id);
+  const chatConfig = useMemo(() => getChatConfig(id), [id]);
 
-  const comLink = (key) => {
-    // console.log('chatLink:', chatLink);
-    if (!serverAddress || !key) return '';
-    let link = '';
-    if (id) {
-      let chats = localStorage.getItem('chats');
-      if (chats) {
-        chats = JSON.parse(chats);
-        if (Array.isArray(chats) && chats.length > 0) {
-          for (let k in chats[id]) {
-            link = chats[id][k];
-            link = link.replaceAll(
-              '{address}',
-              encodeURIComponent(serverAddress),
-            );
-            link = link.replaceAll('{key}', 'sk-' + key);
-          }
-        }
-      }
+  const link = useMemo(() => {
+    if (!chatConfig || !keys[0] || !serverAddress) return '';
+    return buildChatIntegrationLink(chatConfig.template, keys[0], serverAddress);
+  }, [chatConfig, keys, serverAddress]);
+
+  const openLink = () => {
+    if (!link) return;
+    if (isWebChatIntegrationLink(link)) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = link;
     }
-    return link;
   };
 
-  const iframeSrc = keys.length > 0 ? comLink(keys[0]) : '';
+  const copyLink = async () => {
+    if (!link) return;
+    if (await copy(link)) {
+      showSuccess(t('已复制链接'));
+    } else {
+      showError(t('复制失败，请手动复制'));
+    }
+  };
 
-  return !isLoading && iframeSrc ? (
-    <iframe
-      src={iframeSrc}
-      style={{
-        width: '100%',
-        height: 'calc(100vh - 64px)',
-        border: 'none',
-        marginTop: '64px',
-      }}
-      title='Token Frame'
-      allow='camera;microphone'
-    />
-  ) : (
-    <div className='fixed inset-0 w-screen h-screen flex items-center justify-center bg-white/80 z-[1000] mt-[60px]'>
-      <div className='flex flex-col items-center'>
-        <Spin size='large' spinning={true} tip={null} />
-        <span
-          className='whitespace-nowrap mt-2 text-center'
-          style={{ color: 'var(--semi-color-primary)' }}
-        >
-          {t('正在跳转...')}
-        </span>
+  if (isLoading) {
+    return (
+      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center bg-white/80 z-[1000] mt-[60px]'>
+        <div className='flex flex-col items-center'>
+          <Spin size='large' spinning={true} tip={null} />
+          <span
+            className='whitespace-nowrap mt-2 text-center'
+            style={{ color: 'var(--semi-color-primary)' }}
+          >
+            {t('正在准备聊天客户端链接...')}
+          </span>
+        </div>
       </div>
+    );
+  }
+
+  if (!chatConfig || !link) {
+    return (
+      <div className='mt-[96px] mx-auto px-4' style={{ maxWidth: 720 }}>
+        <Card>
+          <Typography.Title heading={4}>
+            {t('聊天客户端配置不可用')}
+          </Typography.Title>
+          <Typography.Paragraph>
+            {t('请到系统设置中的聊天设置检查该入口是否存在。')}
+          </Typography.Paragraph>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className='fixed inset-0 w-screen h-screen flex items-center justify-center bg-white/80 z-[1000] mt-[60px]'>
+      <Card style={{ width: 'min(720px, calc(100vw - 32px))' }}>
+        <Space vertical align='start' style={{ width: '100%' }}>
+          <Typography.Title heading={4} style={{ margin: 0 }}>
+            {t('打开 {{name}}', { name: chatConfig.name })}
+          </Typography.Title>
+          <Banner
+            type='info'
+            description={t(
+              '这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。',
+            )}
+          />
+          <Input value={link} readOnly />
+          <Space>
+            <Button type='primary' onClick={openLink}>
+              {isWebChatIntegrationLink(link)
+                ? t('打开网页客户端')
+                : t('打开本机客户端')}
+            </Button>
+            <Button onClick={copyLink}>{t('复制链接')}</Button>
+            <Button onClick={() => (window.location.href = '/console/token')}>
+              {t('返回令牌管理')}
+            </Button>
+          </Space>
+        </Space>
+      </Card>
     </div>
   );
 };

@@ -25,7 +25,7 @@ import {
   copy,
   showError,
   showSuccess,
-  encodeToBase64,
+  buildChatIntegrationLink,
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
@@ -221,31 +221,7 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
     if (serverAddress === '') {
       serverAddress = window.location.origin;
     }
-    if (url.includes('{cherryConfig}') === true) {
-      let cherryConfig = {
-        id: 'new-api',
-        baseUrl: serverAddress,
-        apiKey: `sk-${fullKey}`,
-      };
-      let encodedConfig = encodeURIComponent(
-        encodeToBase64(JSON.stringify(cherryConfig)),
-      );
-      url = url.replaceAll('{cherryConfig}', encodedConfig);
-    } else if (url.includes('{aionuiConfig}') === true) {
-      let aionuiConfig = {
-        platform: 'new-api',
-        baseUrl: serverAddress,
-        apiKey: `sk-${fullKey}`,
-      };
-      let encodedConfig = encodeURIComponent(
-        encodeToBase64(JSON.stringify(aionuiConfig)),
-      );
-      url = url.replaceAll('{aionuiConfig}', encodedConfig);
-    } else {
-      let encodedServerAddress = encodeURIComponent(serverAddress);
-      url = url.replaceAll('{address}', encodedServerAddress);
-      url = url.replaceAll('{key}', `sk-${fullKey}`);
-    }
+    url = buildChatIntegrationLink(url, fullKey, serverAddress);
 
     window.open(url, '_blank');
   };

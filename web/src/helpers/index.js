@@ -26,6 +26,7 @@ export * from './render';
 export * from './log';
 export * from './data';
 export * from './token';
+export * from './chatLinks';
 export * from './boolean';
 export * from './dashboard';
 export * from './passkey';
