@@ -85,7 +85,7 @@ const ChatPage = () => {
 
   if (isLoading) {
     return (
-      <div className='fixed inset-0 w-screen h-screen flex items-center justify-center bg-white/80 z-[1000] mt-[60px]'>
+      <div className='min-h-[calc(100vh-112px)] flex items-center justify-center'>
         <div className='flex flex-col items-center'>
           <Spin size='large' spinning={true} tip={null} />
           <span
@@ -115,7 +115,7 @@ const ChatPage = () => {
   }
 
   return (
-    <div className='fixed inset-0 w-screen h-screen flex items-center justify-center bg-white/80 z-[1000] mt-[60px]'>
+    <div className='min-h-[calc(100vh-112px)] flex items-center justify-center'>
       <Card style={{ width: 'min(720px, calc(100vw - 32px))' }}>
         <Space vertical align='start' style={{ width: '100%' }}>
           <Typography.Title heading={4} style={{ margin: 0 }}>
@@ -135,9 +135,6 @@ const ChatPage = () => {
                 : t('打开本机客户端')}
             </Button>
             <Button onClick={copyLink}>{t('复制链接')}</Button>
-            <Button onClick={() => (window.location.href = '/console/token')}>
-              {t('返回令牌管理')}
-            </Button>
           </Space>
         </Space>
       </Card>
