@@ -3832,6 +3832,14 @@
     "补全倍率 {{completionRatio}}": "Tỷ lệ hoàn thành {{completionRatio}}",
     "输出价格 {{symbol}}{{price}} / 1M tokens": "Giá đầu ra {{symbol}}{{price}} / 1M tokens",
     "输出价格：{{symbol}}{{price}} / 1M tokens": "Giá đầu ra: {{symbol}}{{price}} / 1M tokens",
-    "输出价格：{{symbol}}{{total}} / 1M tokens": "Giá đầu ra: {{symbol}}{{total}} / 1M tokens"
+    "输出价格：{{symbol}}{{total}} / 1M tokens": "Giá đầu ra: {{symbol}}{{total}} / 1M tokens",
+    "已复制链接": "Đã sao chép liên kết",
+    "正在准备聊天客户端链接...": "Đang chuẩn bị liên kết ứng dụng chat...",
+    "聊天客户端配置不可用": "Cấu hình ứng dụng chat không khả dụng",
+    "请到系统设置中的聊天设置检查该入口是否存在。": "Hãy kiểm tra trong cài đặt chat của cài đặt hệ thống xem mục này có tồn tại hay không.",
+    "打开 {{name}}": "Mở {{name}}",
+    "这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。": "Các mục này không phải là tính năng chat tích hợp trong frontend, mà là liên kết nhập cấu hình cho ứng dụng bên thứ ba. Ứng dụng desktop yêu cầu máy này đã cài ứng dụng tương ứng; ứng dụng web sẽ mở trong tab mới.",
+    "打开网页客户端": "Mở ứng dụng web",
+    "打开本机客户端": "Mở ứng dụng cục bộ"
   }
 }

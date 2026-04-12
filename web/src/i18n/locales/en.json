@@ -3402,6 +3402,14 @@
     "来源:": "Source:",
     "思考中": "Thinking",
     "聊天数据解析失败": "Failed to parse chat data",
-    "已取消 Passkey 登录": "Passkey sign-in cancelled"
+    "已取消 Passkey 登录": "Passkey sign-in cancelled",
+    "已复制链接": "Link copied",
+    "正在准备聊天客户端链接...": "Preparing chat client link...",
+    "聊天客户端配置不可用": "Chat client configuration is unavailable",
+    "请到系统设置中的聊天设置检查该入口是否存在。": "Check whether this entry exists in Chat Settings under System Settings.",
+    "打开 {{name}}": "Open {{name}}",
+    "这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。": "These entries are not built-in frontend chat features. They are configuration import links for third-party clients. Desktop clients require the corresponding app to be installed on this machine; web clients open in a new tab.",
+    "打开网页客户端": "Open web client",
+    "打开本机客户端": "Open local client"
   }
 }

@@ -3281,6 +3281,14 @@
     "输入价格：{{symbol}}{{price}} / 1M tokens": "Prix d'entrée : {{symbol}}{{price}} / 1M tokens",
     "输出价格 {{symbol}}{{price}} / 1M tokens": "Prix de sortie {{symbol}}{{price}} / 1M tokens",
     "输出价格：{{symbol}}{{price}} / 1M tokens": "Prix de sortie : {{symbol}}{{price}} / 1M tokens",
-    "输出价格：{{symbol}}{{total}} / 1M tokens": "Prix de sortie : {{symbol}}{{total}} / 1M tokens"
+    "输出价格：{{symbol}}{{total}} / 1M tokens": "Prix de sortie : {{symbol}}{{total}} / 1M tokens",
+    "已复制链接": "Lien copié",
+    "正在准备聊天客户端链接...": "Préparation du lien du client de chat...",
+    "聊天客户端配置不可用": "Configuration du client de chat indisponible",
+    "请到系统设置中的聊天设置检查该入口是否存在。": "Vérifiez que cette entrée existe dans les paramètres de chat des paramètres système.",
+    "打开 {{name}}": "Ouvrir {{name}}",
+    "这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。": "Ces entrées ne sont pas une fonctionnalité de chat intégrée au frontend, mais des liens d’import de configuration pour des clients tiers. Les clients de bureau nécessitent l’installation de l’application correspondante sur cette machine ; les clients web s’ouvrent dans un nouvel onglet.",
+    "打开网页客户端": "Ouvrir le client web",
+    "打开本机客户端": "Ouvrir le client local"
   }
 }
