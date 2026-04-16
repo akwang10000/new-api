@@ -116,6 +116,17 @@ func isTrustedMotionPayDirectLink(raw string) bool {
 	return false
 }
 
+func validateMotionPayQRCodeLink(link string) error {
+	link = strings.TrimSpace(link)
+	if link == "" {
+		return nil
+	}
+	if isMotionPayCashierLink(link) {
+		return fmt.Errorf("current merchant alipay channel returned cashier page instead of direct payment link")
+	}
+	return nil
+}
+
 func validateMotionPayCheckoutLink(link string) error {
 	link = strings.TrimSpace(link)
 	if link == "" {
@@ -133,6 +144,15 @@ func validateMotionPayCheckoutLink(link string) error {
 func validateMotionPayCheckout(checkout *EpayCheckoutResponse) error {
 	if checkout == nil {
 		return fmt.Errorf("motionpay checkout is empty")
+	}
+	if strings.EqualFold(strings.TrimSpace(checkout.PayLinkType), "qrcode") {
+		if err := validateMotionPayQRCodeLink(checkout.PayLink); err != nil {
+			return err
+		}
+		if err := validateMotionPayQRCodeLink(checkout.QRContent); err != nil {
+			return err
+		}
+		return nil
 	}
 	if err := validateMotionPayCheckoutLink(checkout.PayLink); err != nil {
 		return err

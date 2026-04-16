@@ -54,6 +54,34 @@ func TestValidateMotionPayCheckout(t *testing.T) {
 	}
 }
 
+func TestValidateMotionPayCheckoutAllowsQRCodePayload(t *testing.T) {
+	checkout := &EpayCheckoutResponse{
+		PayLink:     "https://checkout.motionpay.example/qrcode/abc123",
+		PayLinkType: "qrcode",
+		QRContent:   "https://checkout.motionpay.example/qrcode/abc123",
+	}
+
+	if err := validateMotionPayCheckout(checkout); err != nil {
+		t.Fatalf("expected qrcode payload to be accepted, got error: %v", err)
+	}
+}
+
+func TestValidateMotionPayCheckoutRejectsUntrustedPayLinkEvenForQRCode(t *testing.T) {
+	checkout := &EpayCheckoutResponse{
+		PayLink:     "https://motionpay.example/cashier.php?trade_no=123",
+		PayLinkType: "qrcode",
+		QRContent:   "https://motionpay.example/cashier.php?trade_no=123",
+	}
+
+	err := validateMotionPayCheckout(checkout)
+	if err == nil {
+		t.Fatal("expected cashier link to be rejected")
+	}
+	if !strings.Contains(err.Error(), "cashier page") {
+		t.Fatalf("expected cashier page error, got: %v", err)
+	}
+}
+
 func TestDecodeMotionPayMAPIResponseNonJSON(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
