@@ -37,6 +37,16 @@ func TestPickMotionPayCheckout(t *testing.T) {
 	}
 }
 
+func TestPickValidMotionPayCheckoutFallsBackToQRCodeWhenDirectLinkUntrusted(t *testing.T) {
+	urlCheckout := newMotionPayCheckoutResponse("https://checkout.motionpay.example/direct/abc123", "url")
+	qrCheckout := newMotionPayCheckoutResponse("https://checkout.motionpay.example/qrcode/abc123", "qrcode")
+
+	got := pickValidMotionPayCheckout(false, urlCheckout, nil, qrCheckout)
+	if got == nil || got.PayLink != qrCheckout.PayLink || got.PayLinkType != "qrcode" {
+		t.Fatalf("expected qrcode checkout fallback, got %#v", got)
+	}
+}
+
 func TestValidateMotionPayCheckout(t *testing.T) {
 	if err := validateMotionPayCheckout(&EpayCheckoutResponse{
 		PayLink:     "https://qr.alipay.com/fkx123",

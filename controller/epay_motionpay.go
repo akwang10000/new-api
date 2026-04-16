@@ -209,6 +209,22 @@ func pickMotionPayCheckout(candidates ...*EpayCheckoutResponse) *EpayCheckoutRes
 	return nil
 }
 
+func pickValidMotionPayCheckout(preferQRCode bool, candidates ...*EpayCheckoutResponse) *EpayCheckoutResponse {
+	orderedCandidates := candidates
+	if preferQRCode && len(candidates) == 3 {
+		orderedCandidates = []*EpayCheckoutResponse{candidates[2], candidates[0], candidates[1]}
+	}
+	for _, candidate := range orderedCandidates {
+		if candidate == nil {
+			continue
+		}
+		if err := validateMotionPayCheckout(candidate); err == nil {
+			return candidate
+		}
+	}
+	return nil
+}
+
 func summarizeMotionPayBody(body []byte) string {
 	summary := strings.Join(strings.Fields(string(body)), " ")
 	const maxLen = 200
@@ -257,7 +273,8 @@ func requestMotionPayMAPI(c *gin.Context, client *epay.Client, args *epay.Purcha
 		"clientip":     normalizeClientIP(c.ClientIP()),
 		"device":       device,
 	}, client.Config.Key)
-	if motionPayQRCodePreferred(args, device) {
+	preferQRCode := motionPayQRCodePreferred(args, device)
+	if preferQRCode {
 		params["rawurl"] = "1"
 		params = epay.GenerateParams(params, client.Config.Key)
 	}
@@ -298,10 +315,7 @@ func requestMotionPayMAPI(c *gin.Context, client *epay.Client, args *epay.Purcha
 	urlCheckout := newMotionPayCheckoutResponse(payload.PayURL, "url")
 	schemeCheckout := newMotionPayCheckoutResponse(payload.URLScheme, "url")
 
-	checkout := pickMotionPayCheckout(urlCheckout, schemeCheckout, qrCheckout)
-	if motionPayQRCodePreferred(args, device) {
-		checkout = pickMotionPayCheckout(qrCheckout, urlCheckout, schemeCheckout)
-	}
+	checkout := pickValidMotionPayCheckout(preferQRCode, urlCheckout, schemeCheckout, qrCheckout)
 	if checkout == nil {
 		return nil, fmt.Errorf("motionpay returned no usable payment link")
 	}
