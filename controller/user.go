@@ -324,6 +324,8 @@ type TransferAffQuotaRequest struct {
 	Quota int `json:"quota" binding:"required"`
 }
 
+const invitationLinkSharingPaused = true
+
 func TransferAffQuota(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
@@ -345,6 +347,14 @@ func TransferAffQuota(c *gin.Context) {
 }
 
 func GetAffCode(c *gin.Context) {
+	if invitationLinkSharingPaused {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "Invitation link sharing is temporarily unavailable.",
+		})
+		return
+	}
+
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {

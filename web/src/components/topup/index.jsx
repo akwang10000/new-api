@@ -47,6 +47,7 @@ const defaultNOWPaymentsModes = {
 
 const defaultNOWPaymentsCryptoAmountOptions = [5, 10, 20, 50, 100];
 const defaultBEpusdtNetworks = [];
+const invitationLinksPaused = true;
 
 const TopUp = () => {
   const { t } = useTranslation();
@@ -652,6 +653,7 @@ const TopUp = () => {
   };
 
   const getAffLink = async () => {
+    if (invitationLinksPaused) return;
     const res = await API.get('/api/user/aff');
     const { success, message, data } = res.data;
     if (success) {
@@ -680,6 +682,10 @@ const TopUp = () => {
   };
 
   const handleAffLinkClick = async () => {
+    if (invitationLinksPaused || !affLink) {
+      showInfo(t('邀请链接功能维护中，请稍后再试'));
+      return;
+    }
     await copy(affLink);
     showSuccess(t('邀请链接已复制到剪切板'));
   };
@@ -1034,14 +1040,16 @@ const TopUp = () => {
           allSubscriptions={allSubscriptions}
           reloadSubscriptionSelf={getSubscriptionSelf}
         />
-        <InvitationCard
-          t={t}
-          userState={userState}
-          renderQuota={renderQuota}
-          setOpenTransfer={setOpenTransfer}
-          affLink={affLink}
-          handleAffLinkClick={handleAffLinkClick}
-        />
+        {!invitationLinksPaused && (
+          <InvitationCard
+            t={t}
+            userState={userState}
+            renderQuota={renderQuota}
+            setOpenTransfer={setOpenTransfer}
+            affLink={affLink}
+            handleAffLinkClick={handleAffLinkClick}
+          />
+        )}
       </div>
     </div>
   );

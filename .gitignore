@@ -22,6 +22,12 @@ tiktoken_cache
 web/bun.lock
 plans
 .claude
+.worktrees
+.ssh/
+.tmp/
+.tmp-gcp-key-*
+*.db.bak*
+test-results/
 
 electron/node_modules
 electron/dist
