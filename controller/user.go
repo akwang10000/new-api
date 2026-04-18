@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -423,6 +424,11 @@ func GetSelf(c *gin.Context) {
 		"stripe_customer":   user.StripeCustomer,
 		"sidebar_modules":   userSetting.SidebarModules, // 正确提取sidebar_modules字段
 		"permissions":       permissions,                // 新增权限字段
+	}
+	if chatwootHMACToken := strings.TrimSpace(os.Getenv("CHATWOOT_HMAC_TOKEN")); chatwootHMACToken != "" {
+		chatwootIdentifier := strconv.Itoa(user.Id)
+		responseData["chatwoot_identifier"] = chatwootIdentifier
+		responseData["chatwoot_identifier_hash"] = common.GenerateHMACWithKey([]byte(chatwootHMACToken), chatwootIdentifier)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
