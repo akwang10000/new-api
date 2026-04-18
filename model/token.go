@@ -381,6 +381,25 @@ func DeleteTokenById(id int, userId int) (err error) {
 	return token.Delete()
 }
 
+func InvalidateUserTokensCache(userId int) error {
+	if !common.RedisEnabled {
+		return nil
+	}
+	var tokens []Token
+	if err := DB.Unscoped().Where("user_id = ?", userId).Find(&tokens).Error; err != nil {
+		return err
+	}
+	for _, token := range tokens {
+		if token.Key == "" {
+			continue
+		}
+		if err := cacheDeleteToken(token.Key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func IncreaseTokenQuota(tokenId int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")

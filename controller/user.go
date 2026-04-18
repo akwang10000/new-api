@@ -907,6 +907,12 @@ func ManageUser(c *gin.Context) {
 			})
 			return
 		}
+		if err := model.InvalidateUserCache(user.Id); err != nil {
+			common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %s", user.Id, err.Error()))
+		}
+		if err := model.InvalidateUserTokensCache(user.Id); err != nil {
+			common.SysLog(fmt.Sprintf("failed to invalidate tokens cache for user %d: %s", user.Id, err.Error()))
+		}
 	case "promote":
 		if myRole != common.RoleRootUser {
 			common.ApiErrorI18n(c, i18n.MsgUserAdminCannotPromote)
@@ -932,6 +938,14 @@ func ManageUser(c *gin.Context) {
 	if err := user.Update(false); err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if req.Action == "disable" || req.Action == "enable" || req.Action == "promote" || req.Action == "demote" {
+		if err := model.InvalidateUserCache(user.Id); err != nil {
+			common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %s", user.Id, err.Error()))
+		}
+		if err := model.InvalidateUserTokensCache(user.Id); err != nil {
+			common.SysLog(fmt.Sprintf("failed to invalidate tokens cache for user %d: %s", user.Id, err.Error()))
+		}
 	}
 	clearUser := model.User{
 		Role:   user.Role,

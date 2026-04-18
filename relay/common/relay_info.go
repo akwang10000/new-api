@@ -784,6 +784,12 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		}
 	}
 
+	if !channelOtherSettings.AllowSpeed {
+		if _, exists := data["speed"]; exists {
+			delete(data, "speed")
+		}
+	}
+
 	// 默认允许 store 透传，除非明确禁用（禁用可能影响 Codex 使用）
 	if channelOtherSettings.DisableStore {
 		if _, exists := data["store"]; exists {

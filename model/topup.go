@@ -24,6 +24,8 @@ type TopUp struct {
 	Status        string  `json:"status"`
 }
 
+var ErrPaymentMethodMismatch = errors.New("payment method mismatch")
+
 func (topUp *TopUp) Insert() error {
 	var err error
 	err = DB.Create(topUp).Error
@@ -194,6 +196,25 @@ func CompleteTopUpByRequestedAmount(referenceId string) error {
 	return nil
 }
 
+const topUpQueryWindowSeconds int64 = 30 * 24 * 60 * 60
+
+func topUpQueryCutoff() int64 {
+	return common.GetTimestamp() - topUpQueryWindowSeconds
+}
+
+const searchTopUpCountHardLimit = 10000
+
+func topUpSearchLikePattern(keyword string) (string, error) {
+	pattern, err := sanitizeLikePattern(strings.TrimSpace(keyword))
+	if err != nil {
+		return "", err
+	}
+	if !strings.Contains(pattern, "%") {
+		pattern = "%" + pattern + "%"
+	}
+	return pattern, nil
+}
+
 func GetUserTopUps(userId int, pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
 	// Start transaction
 	tx := DB.Begin()
@@ -206,15 +227,17 @@ func GetUserTopUps(userId int, pageInfo *common.PageInfo) (topups []*TopUp, tota
 		}
 	}()
 
+	cutoff := topUpQueryCutoff()
+
 	// Get total count within transaction
-	err = tx.Model(&TopUp{}).Where("user_id = ?", userId).Count(&total).Error
+	err = tx.Model(&TopUp{}).Where("user_id = ? AND create_time >= ?", userId, cutoff).Count(&total).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
 	// Get paginated topups within same transaction
-	err = tx.Where("user_id = ?", userId).Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error
+	err = tx.Where("user_id = ? AND create_time >= ?", userId, cutoff).Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -269,20 +292,26 @@ func SearchUserTopUps(userId int, keyword string, pageInfo *common.PageInfo) (to
 		}
 	}()
 
-	query := tx.Model(&TopUp{}).Where("user_id = ?", userId)
+	query := tx.Model(&TopUp{}).Where("user_id = ? AND create_time >= ?", userId, topUpQueryCutoff())
 	if keyword != "" {
-		like := "%%" + keyword + "%%"
-		query = query.Where("trade_no LIKE ?", like)
+		like, patternErr := topUpSearchLikePattern(keyword)
+		if patternErr != nil {
+			tx.Rollback()
+			return nil, 0, patternErr
+		}
+		query = query.Where("trade_no LIKE ? ESCAPE '!'", like)
 	}
 
-	if err = query.Count(&total).Error; err != nil {
+	if err = query.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
 		tx.Rollback()
-		return nil, 0, err
+		common.SysError("failed to count search topups: " + err.Error())
+		return nil, 0, errors.New("搜索充值记录失败")
 	}
 
 	if err = query.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error; err != nil {
 		tx.Rollback()
-		return nil, 0, err
+		common.SysError("failed to search topups: " + err.Error())
+		return nil, 0, errors.New("搜索充值记录失败")
 	}
 
 	if err = tx.Commit().Error; err != nil {
@@ -305,18 +334,24 @@ func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUp
 
 	query := tx.Model(&TopUp{})
 	if keyword != "" {
-		like := "%%" + keyword + "%%"
-		query = query.Where("trade_no LIKE ?", like)
+		like, patternErr := topUpSearchLikePattern(keyword)
+		if patternErr != nil {
+			tx.Rollback()
+			return nil, 0, patternErr
+		}
+		query = query.Where("trade_no LIKE ? ESCAPE '!'", like)
 	}
 
-	if err = query.Count(&total).Error; err != nil {
+	if err = query.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
 		tx.Rollback()
-		return nil, 0, err
+		common.SysError("failed to count search topups: " + err.Error())
+		return nil, 0, errors.New("搜索充值记录失败")
 	}
 
 	if err = query.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error; err != nil {
 		tx.Rollback()
-		return nil, 0, err
+		common.SysError("failed to search topups: " + err.Error())
+		return nil, 0, errors.New("搜索充值记录失败")
 	}
 
 	if err = tx.Commit().Error; err != nil {
@@ -494,6 +529,10 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", referenceId).First(topUp).Error
 		if err != nil {
 			return errors.New("充值订单不存在")
+		}
+
+		if !strings.EqualFold(strings.TrimSpace(topUp.PaymentMethod), "creem") {
+			return ErrPaymentMethodMismatch
 		}
 
 		if topUp.Status != common.TopUpStatusPending {

@@ -2037,6 +2037,7 @@ func TestRemoveDisabledFieldsDefaultFiltering(t *testing.T) {
 	input := `{
 		"service_tier":"flex",
 		"inference_geo":"eu",
+		"speed":{"type":"standard_only"},
 		"safety_identifier":"user-123",
 		"store":true,
 		"stream_options":{"include_obfuscation":false}
@@ -2064,6 +2065,22 @@ func TestRemoveDisabledFieldsAllowInferenceGeo(t *testing.T) {
 		t.Fatalf("RemoveDisabledFields returned error: %v", err)
 	}
 	assertJSONEqual(t, `{"inference_geo":"eu","store":true}`, string(out))
+}
+
+func TestRemoveDisabledFieldsAllowSpeed(t *testing.T) {
+	input := `{
+		"speed":{"type":"standard_only"},
+		"store":true
+	}`
+	settings := dto.ChannelOtherSettings{
+		AllowSpeed: true,
+	}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	if err != nil {
+		t.Fatalf("RemoveDisabledFields returned error: %v", err)
+	}
+	assertJSONEqual(t, `{"speed":{"type":"standard_only"},"store":true}`, string(out))
 }
 
 func assertJSONEqual(t *testing.T, want, got string) {

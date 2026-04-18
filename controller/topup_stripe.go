@@ -146,6 +146,12 @@ func RequestStripePay(c *gin.Context) {
 }
 
 func StripeWebhook(c *gin.Context) {
+	if setting.StripeWebhookSecret == "" {
+		log.Println("Stripe Webhook Secret not configured")
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Printf("解析Stripe Webhook参数失败: %v\n", err)
@@ -154,8 +160,7 @@ func StripeWebhook(c *gin.Context) {
 	}
 
 	signature := c.GetHeader("Stripe-Signature")
-	endpointSecret := setting.StripeWebhookSecret
-	event, err := webhook.ConstructEventWithOptions(payload, signature, endpointSecret, webhook.ConstructEventOptions{
+	event, err := webhook.ConstructEventWithOptions(payload, signature, setting.StripeWebhookSecret, webhook.ConstructEventOptions{
 		IgnoreAPIVersionMismatch: true,
 	})
 
@@ -170,6 +175,10 @@ func StripeWebhook(c *gin.Context) {
 		sessionCompleted(event)
 	case stripe.EventTypeCheckoutSessionExpired:
 		sessionExpired(event)
+	case stripe.EventTypeCheckoutSessionAsyncPaymentSucceeded:
+		sessionAsyncPaymentSucceeded(event)
+	case stripe.EventTypeCheckoutSessionAsyncPaymentFailed:
+		sessionAsyncPaymentFailed(event)
 	default:
 		log.Printf("不支持的Stripe Webhook事件类型: %s\n", event.Type)
 	}
@@ -183,6 +192,65 @@ func sessionCompleted(event stripe.Event) {
 	status := event.GetObjectValue("status")
 	if "complete" != status {
 		log.Println("错误的Stripe Checkout完成状态:", status, ",", referenceId)
+		return
+	}
+
+	paymentStatus := event.GetObjectValue("payment_status")
+	if paymentStatus != "paid" {
+		log.Println("Stripe Checkout payment not completed, waiting for async result", paymentStatus, ",", referenceId)
+		return
+	}
+
+	fulfillOrder(event, referenceId, customerId)
+}
+
+func sessionAsyncPaymentSucceeded(event stripe.Event) {
+	customerId := event.GetObjectValue("customer")
+	referenceId := event.GetObjectValue("client_reference_id")
+	log.Println("Stripe async payment succeeded", referenceId)
+
+	fulfillOrder(event, referenceId, customerId)
+}
+
+func sessionAsyncPaymentFailed(event stripe.Event) {
+	referenceId := event.GetObjectValue("client_reference_id")
+	log.Println("Stripe async payment failed", referenceId)
+
+	if len(referenceId) == 0 {
+		log.Println("Stripe async payment failed event missing reference id")
+		return
+	}
+
+	LockOrder(referenceId)
+	defer UnlockOrder(referenceId)
+
+	topUp := model.GetTopUpByTradeNo(referenceId)
+	if topUp == nil {
+		log.Println("Stripe async payment failed but top-up order does not exist", referenceId)
+		return
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(topUp.PaymentMethod), PaymentMethodStripe) {
+		log.Println("Stripe async payment failed but payment method does not match", referenceId, topUp.PaymentMethod)
+		return
+	}
+
+	if topUp.Status != common.TopUpStatusPending {
+		log.Println("Stripe async payment failed but order status is not pending", referenceId, topUp.Status)
+		return
+	}
+
+	topUp.Status = common.TopUpStatusFailed
+	if err := topUp.Update(); err != nil {
+		log.Println("Stripe failed to mark top-up order failed", referenceId, ", err:", err.Error())
+		return
+	}
+	log.Println("Stripe top-up order marked failed", referenceId)
+}
+
+func fulfillOrder(event stripe.Event, referenceId string, customerId string) {
+	if len(referenceId) == 0 {
+		log.Println("未提供支付单号")
 		return
 	}
 
