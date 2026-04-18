@@ -260,6 +260,18 @@ const EditUserModal = (props) => {
 
                     <Col span={24}>
                       <Form.Input
+                        field='email'
+                        label={t('邮箱地址')}
+                        placeholder={t('未绑定')}
+                        disabled
+                        extraText={t(
+                          '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                        )}
+                      />
+                    </Col>
+
+                    <Col span={24}>
+                      <Form.Input
                         field='remark'
                         label={t('备注')}
                         placeholder={t('请输入备注（仅管理员可见）')}

@@ -121,6 +121,18 @@ func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interf
 }
 
 func Recharge(referenceId string, customerId string) (err error) {
+	if referenceId == "" {
+		return errors.New("未提供支付单号")
+	}
+
+	topUp := GetTopUpByTradeNo(referenceId)
+	if topUp == nil {
+		return errors.New("充值订单不存在")
+	}
+	if !strings.EqualFold(strings.TrimSpace(topUp.PaymentMethod), "stripe") {
+		return errors.New("充值订单支付方式错误")
+	}
+
 	updateFields := map[string]interface{}{}
 	if customerId != "" {
 		updateFields["stripe_customer"] = customerId
