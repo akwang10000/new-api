@@ -394,6 +394,12 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 						})
 					}
 				}
+				if len(claudeMediaMessages) == 0 {
+					claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+						Type: "text",
+						Text: common.GetPointer[string]("..."),
+					})
+				}
 				claudeMessage.Content = claudeMediaMessages
 			}
 			claudeMessages = append(claudeMessages, claudeMessage)

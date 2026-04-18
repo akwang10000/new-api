@@ -54,3 +54,26 @@ func TestIsPrivateIPAllowsPublicRanges(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateURLRejectsScopedIPv6Literal(t *testing.T) {
+	protection := &SSRFProtection{
+		AllowPrivateIp:         false,
+		DomainFilterMode:       false,
+		IpFilterMode:           false,
+		ApplyIPFilterForDomain: false,
+	}
+
+	require.Error(t, protection.ValidateURL("http://[fe80::1%25eth0]/"))
+}
+
+func TestValidateURLRejectsIPv4MappedIPv6Literal(t *testing.T) {
+	protection := &SSRFProtection{
+		AllowPrivateIp:         false,
+		DomainFilterMode:       false,
+		IpFilterMode:           false,
+		ApplyIPFilterForDomain: false,
+	}
+
+	require.Error(t, protection.ValidateURL("http://[::ffff:8.8.8.8]/"))
+	require.NoError(t, protection.ValidateURL("http://8.8.8.8/"))
+}

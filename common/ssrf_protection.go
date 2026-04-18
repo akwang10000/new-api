@@ -118,6 +118,29 @@ func isPrivateIP(ip net.IP) bool {
 	return false
 }
 
+func parseURLHostIP(host string) (net.IP, error) {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip, nil
+	}
+	if zoneIndex := strings.LastIndex(host, "%"); zoneIndex > 0 {
+		if ip := net.ParseIP(host[:zoneIndex]); ip != nil {
+			return ip, nil
+		}
+	}
+	if strings.Contains(host, ":") {
+		return nil, fmt.Errorf("invalid IP address: %s", host)
+	}
+	return nil, nil
+}
+
+func isIPv4MappedLiteral(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if zoneIndex := strings.LastIndex(host, "%"); zoneIndex > 0 {
+		host = host[:zoneIndex]
+	}
+	return strings.HasPrefix(host, "::ffff:")
+}
+
 // parsePortRanges 解析端口范围配置
 // 支持格式: "80", "443", "8000-9000"
 func parsePortRanges(portConfigs []string) ([]int, error) {
@@ -287,7 +310,14 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 	}
 
 	// 如果 host 是 IP，则跳过域名检查
-	if ip := net.ParseIP(host); ip != nil {
+	ip, err := parseURLHostIP(host)
+	if err != nil {
+		return err
+	}
+	if ip != nil {
+		if isIPv4MappedLiteral(host) && !p.AllowPrivateIp {
+			return fmt.Errorf("IPv4-mapped IPv6 address not allowed: %s", host)
+		}
 		if !p.IsIPAccessAllowed(ip) {
 			if isPrivateIP(ip) {
 				return fmt.Errorf("private IP address not allowed: %s", ip.String())

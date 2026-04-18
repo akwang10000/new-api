@@ -784,6 +784,10 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		}
 	}
 
+	if !channelOtherSettings.AllowCacheControl {
+		removeClaudeCacheControlFields(data)
+	}
+
 	if !channelOtherSettings.AllowSpeed {
 		if _, exists := data["speed"]; exists {
 			delete(data, "speed")
@@ -826,6 +830,38 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		return jsonData, nil
 	}
 	return jsonDataAfter, nil
+}
+
+func removeClaudeCacheControlFields(data map[string]interface{}) {
+	delete(data, "cache_control")
+	removeCacheControlFromContentBlocks(data["system"])
+	if messages, ok := data["messages"].([]interface{}); ok {
+		for _, item := range messages {
+			if message, ok := item.(map[string]interface{}); ok {
+				removeCacheControlFromContentBlocks(message["content"])
+			}
+		}
+	}
+	if tools, ok := data["tools"].([]interface{}); ok {
+		for _, item := range tools {
+			if tool, ok := item.(map[string]interface{}); ok {
+				delete(tool, "cache_control")
+			}
+		}
+	}
+}
+
+func removeCacheControlFromContentBlocks(content interface{}) {
+	switch blocks := content.(type) {
+	case []interface{}:
+		for _, item := range blocks {
+			if block, ok := item.(map[string]interface{}); ok {
+				delete(block, "cache_control")
+			}
+		}
+	case map[string]interface{}:
+		delete(blocks, "cache_control")
+	}
 }
 
 // RemoveGeminiDisabledFields removes disabled fields from Gemini request JSON data

@@ -2035,11 +2035,14 @@ func TestRemoveDisabledFieldsSkipWhenGlobalPassThroughEnabled(t *testing.T) {
 
 func TestRemoveDisabledFieldsDefaultFiltering(t *testing.T) {
 	input := `{
+		"cache_control":{"type":"ephemeral"},
 		"service_tier":"flex",
 		"inference_geo":"eu",
 		"speed":{"type":"standard_only"},
 		"safety_identifier":"user-123",
 		"store":true,
+		"messages":[{"role":"user","content":[{"type":"text","text":"hi","cache_control":{"type":"ephemeral"}}]}],
+		"tools":[{"name":"test","cache_control":{"type":"ephemeral"},"input_schema":{"type":"object","properties":{"cache_control":{"type":"string"}}}}],
 		"stream_options":{"include_obfuscation":false}
 	}`
 	settings := dto.ChannelOtherSettings{}
@@ -2048,7 +2051,7 @@ func TestRemoveDisabledFieldsDefaultFiltering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RemoveDisabledFields returned error: %v", err)
 	}
-	assertJSONEqual(t, `{"store":true}`, string(out))
+	assertJSONEqual(t, `{"messages":[{"content":[{"text":"hi","type":"text"}],"role":"user"}],"store":true,"tools":[{"input_schema":{"properties":{"cache_control":{"type":"string"}},"type":"object"},"name":"test"}]}`, string(out))
 }
 
 func TestRemoveDisabledFieldsAllowInferenceGeo(t *testing.T) {
@@ -2081,6 +2084,23 @@ func TestRemoveDisabledFieldsAllowSpeed(t *testing.T) {
 		t.Fatalf("RemoveDisabledFields returned error: %v", err)
 	}
 	assertJSONEqual(t, `{"speed":{"type":"standard_only"},"store":true}`, string(out))
+}
+
+func TestRemoveDisabledFieldsAllowCacheControl(t *testing.T) {
+	input := `{
+		"cache_control":{"type":"ephemeral"},
+		"messages":[{"role":"user","content":[{"type":"text","text":"hi","cache_control":{"type":"ephemeral"}}]}],
+		"store":true
+	}`
+	settings := dto.ChannelOtherSettings{
+		AllowCacheControl: true,
+	}
+
+	out, err := RemoveDisabledFields([]byte(input), settings, false)
+	if err != nil {
+		t.Fatalf("RemoveDisabledFields returned error: %v", err)
+	}
+	assertJSONEqual(t, input, string(out))
 }
 
 func assertJSONEqual(t *testing.T, want, got string) {

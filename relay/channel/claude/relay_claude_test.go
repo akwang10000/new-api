@@ -51,6 +51,39 @@ func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
 	}
 }
 
+func TestRequestOpenAI2ClaudeMessageEmptyMultimodalTextUsesFallback(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+
+	claudeRequest, err := RequestOpenAI2ClaudeMessage(c, dto.GeneralOpenAIRequest{
+		Model: "claude-test",
+		Messages: []dto.Message{
+			{
+				Role: "user",
+				Content: []any{
+					map[string]any{
+						"type": "text",
+						"text": "",
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RequestOpenAI2ClaudeMessage returned error: %v", err)
+	}
+	if len(claudeRequest.Messages) != 1 {
+		t.Fatalf("messages length = %d, want 1", len(claudeRequest.Messages))
+	}
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	if !ok {
+		t.Fatalf("content type = %T, want []dto.ClaudeMediaMessage", claudeRequest.Messages[0].Content)
+	}
+	if len(content) != 1 || content[0].Text == nil || *content[0].Text != "..." {
+		t.Fatalf("content = %#v, want single fallback text block", content)
+	}
+}
+
 func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 	// message_start 先积累 usage
 	claudeInfo := &ClaudeResponseInfo{

@@ -204,6 +204,13 @@ func topUpQueryCutoff() int64 {
 
 const searchTopUpCountHardLimit = 10000
 
+func countTopUpsWithHardLimit(tx *gorm.DB, query *gorm.DB) (int64, error) {
+	var total int64
+	subQuery := query.Session(&gorm.Session{}).Select("id").Limit(searchTopUpCountHardLimit)
+	err := tx.Table("(?) AS limited_topups", subQuery).Count(&total).Error
+	return total, err
+}
+
 func topUpSearchLikePattern(keyword string) (string, error) {
 	pattern, err := sanitizeLikePattern(strings.TrimSpace(keyword))
 	if err != nil {
@@ -302,7 +309,7 @@ func SearchUserTopUps(userId int, keyword string, pageInfo *common.PageInfo) (to
 		query = query.Where("trade_no LIKE ? ESCAPE '!'", like)
 	}
 
-	if err = query.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
+	if total, err = countTopUpsWithHardLimit(tx, query); err != nil {
 		tx.Rollback()
 		common.SysError("failed to count search topups: " + err.Error())
 		return nil, 0, errors.New("搜索充值记录失败")
@@ -342,7 +349,7 @@ func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUp
 		query = query.Where("trade_no LIKE ? ESCAPE '!'", like)
 	}
 
-	if err = query.Limit(searchTopUpCountHardLimit).Count(&total).Error; err != nil {
+	if total, err = countTopUpsWithHardLimit(tx, query); err != nil {
 		tx.Rollback()
 		common.SysError("failed to count search topups: " + err.Error())
 		return nil, 0, errors.New("搜索充值记录失败")

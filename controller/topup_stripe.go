@@ -310,8 +310,14 @@ func sessionExpired(event stripe.Event) {
 		return
 	}
 
+	if !strings.EqualFold(strings.TrimSpace(topUp.PaymentMethod), PaymentMethodStripe) {
+		log.Println("Stripe expired event payment method does not match", referenceId, topUp.PaymentMethod)
+		return
+	}
+
 	if topUp.Status != common.TopUpStatusPending {
 		log.Println("充值订单状态错误", referenceId)
+		return
 	}
 
 	topUp.Status = common.TopUpStatusExpired

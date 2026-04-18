@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
@@ -134,4 +135,26 @@ func TestSearchTopUpsSanitizesLikePatternAndKeepsPartialSearch(t *testing.T) {
 
 	_, _, err = SearchUserTopUps(user.Id, "%%", &common.PageInfo{Page: 1, PageSize: 10})
 	require.Error(t, err)
+}
+
+func TestSearchAllTopUpsCountUsesHardLimit(t *testing.T) {
+	prepareTopUpTestDB(t)
+
+	now := common.GetTimestamp()
+	topups := make([]TopUp, 0, searchTopUpCountHardLimit+1)
+	for i := 0; i < searchTopUpCountHardLimit+1; i++ {
+		topups = append(topups, TopUp{
+			UserId:     9,
+			Amount:     10,
+			Money:      10,
+			TradeNo:    "hard-limit-order-" + strconv.Itoa(i),
+			CreateTime: now,
+			Status:     common.TopUpStatusPending,
+		})
+	}
+	require.NoError(t, DB.CreateInBatches(topups, 500).Error)
+
+	_, total, err := SearchAllTopUps("hard-limit-order", &common.PageInfo{Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	require.EqualValues(t, searchTopUpCountHardLimit, total)
 }
