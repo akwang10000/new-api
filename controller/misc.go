@@ -118,6 +118,17 @@ func GetStatus(c *gin.Context) {
 		"_qn":                         "new-api",
 	}
 
+	if strings.EqualFold(common.OptionMap["ChatwootEnabled"], "true") {
+		chatwootBaseURL := strings.TrimSpace(common.OptionMap["ChatwootBaseURL"])
+		chatwootWebsiteToken := strings.TrimSpace(common.OptionMap["ChatwootWebsiteToken"])
+		if chatwootBaseURL != "" && chatwootWebsiteToken != "" {
+			data["chatwoot"] = gin.H{
+				"base_url":      chatwootBaseURL,
+				"website_token": chatwootWebsiteToken,
+			}
+		}
+	}
+
 	// 根据启用状态注入可选内容
 	if cs.ApiInfoEnabled {
 		data["api_info"] = console_setting.GetApiInfo()
