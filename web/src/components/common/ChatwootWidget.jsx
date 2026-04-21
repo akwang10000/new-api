@@ -89,6 +89,23 @@ export default function ChatwootWidget({ config }) {
   const locale = useMemo(() => getChatwootLocale(language), [language]);
   const launcherTitle = useMemo(() => getLauncherTitle(language), [language]);
 
+  const applyChatwootUser = () => {
+    if (!chatwootUser || !window.$chatwoot?.setUser) return false;
+    window.$chatwoot.setUser(chatwootUser.identifier, {
+      email: chatwootUser.email,
+      name: chatwootUser.name,
+      identifier_hash: chatwootUser.identifierHash,
+    });
+    window.$chatwoot?.setCustomAttributes?.(chatwootUser.customAttributes);
+    return true;
+  };
+
+  const retryApplyChatwootUser = () => {
+    [0, 500, 1500, 3000, 6000].forEach((delay) => {
+      window.setTimeout(applyChatwootUser, delay);
+    });
+  };
+
   useEffect(() => {
     const loadChatwootUser = async () => {
       if (!config?.base_url || !config?.website_token) {
@@ -181,20 +198,10 @@ export default function ChatwootWidget({ config }) {
       return;
     }
 
-    const applyUser = () => {
-      if (!window.$chatwoot?.setUser) return;
-      window.$chatwoot.setUser(chatwootUser.identifier, {
-        email: chatwootUser.email,
-        name: chatwootUser.name,
-        identifier_hash: chatwootUser.identifierHash,
-      });
-      window.$chatwoot?.setCustomAttributes?.(chatwootUser.customAttributes);
-    };
-
-    applyUser();
-    window.addEventListener('chatwoot:ready', applyUser);
+    retryApplyChatwootUser();
+    window.addEventListener('chatwoot:ready', retryApplyChatwootUser);
     return () => {
-      window.removeEventListener('chatwoot:ready', applyUser);
+      window.removeEventListener('chatwoot:ready', retryApplyChatwootUser);
     };
   }, [chatwootUser, isUserResolved]);
 
@@ -203,8 +210,10 @@ export default function ChatwootWidget({ config }) {
   if (!baseUrl || !websiteToken) return null;
 
   const openChatwoot = () => {
+    retryApplyChatwootUser();
     if (window.$chatwoot?.toggle) {
-      window.$chatwoot.toggle('toggle');
+      window.$chatwoot.toggle('open');
+      retryApplyChatwootUser();
       return;
     }
     openWidgetFallback(baseUrl, websiteToken);
