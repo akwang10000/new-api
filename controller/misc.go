@@ -52,6 +52,7 @@ func GetStatus(c *gin.Context) {
 		"version":                     common.Version,
 		"start_time":                  common.StartTime,
 		"email_verification":          common.EmailVerificationEnabled,
+		"email_domain_restriction":    common.EmailDomainRestrictionEnabled,
 		"github_oauth":                common.GitHubOAuthEnabled,
 		"github_client_id":            common.GitHubClientId,
 		"discord_oauth":               system_setting.GetDiscordSettings().Enabled,
@@ -264,19 +265,11 @@ func SendEmailVerification(c *gin.Context) {
 		return
 	}
 	localPart := parts[0]
-	domainPart := parts[1]
 	if common.EmailDomainRestrictionEnabled {
-		allowed := false
-		for _, domain := range common.EmailDomainWhitelist {
-			if domainPart == domain {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
+		if !isEmailDomainWhitelisted(email) {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "The administrator has enabled the email domain name whitelist, and your email address is not allowed due to special symbols or it's not in the whitelist.",
+				"message": emailDomainWhitelistMessage,
 			})
 			return
 		}

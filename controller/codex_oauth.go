@@ -99,7 +99,11 @@ func startCodexOAuthWithChannelID(c *gin.Context, channelID int) {
 	session.Set(codexOAuthSessionKey(channelID, "state"), flow.State)
 	session.Set(codexOAuthSessionKey(channelID, "verifier"), flow.Verifier)
 	session.Set(codexOAuthSessionKey(channelID, "created_at"), time.Now().Unix())
-	_ = session.Save()
+	if err := session.Save(); err != nil {
+		common.SysError("failed to save codex oauth session: " + err.Error())
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "failed to initialize oauth flow"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -181,7 +185,13 @@ func completeCodexOAuthWithChannelID(c *gin.Context, channelID int) {
 	tokenRes, err := service.ExchangeCodexAuthorizationCodeWithProxy(ctx, code, verifier, channelProxy)
 	if err != nil {
 		common.SysError("failed to exchange codex authorization code: " + err.Error())
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "授权码交换失败，请重试"})
+		message := "授权码交换失败，请重试"
+		errMessage := strings.TrimSpace(err.Error())
+		if strings.Contains(errMessage, "Failed to exchange authorization code for tokens") ||
+			strings.Contains(errMessage, "invalid_grant") {
+			message = errMessage
+		}
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": message})
 		return
 	}
 
@@ -210,7 +220,9 @@ func completeCodexOAuthWithChannelID(c *gin.Context, channelID int) {
 	session.Delete(codexOAuthSessionKey(channelID, "state"))
 	session.Delete(codexOAuthSessionKey(channelID, "verifier"))
 	session.Delete(codexOAuthSessionKey(channelID, "created_at"))
-	_ = session.Save()
+	if err := session.Save(); err != nil {
+		common.SysError("failed to clear codex oauth session: " + err.Error())
+	}
 
 	if channelID > 0 {
 		if err := model.DB.Model(&model.Channel{}).Where("id = ?", channelID).Update("key", string(encoded)).Error; err != nil {

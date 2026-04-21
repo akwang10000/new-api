@@ -115,15 +115,23 @@ func refreshCodexOAuthToken(
 	defer resp.Body.Close()
 
 	var payload struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		ExpiresIn    int    `json:"expires_in"`
+		AccessToken      string `json:"access_token"`
+		RefreshToken     string `json:"refresh_token"`
+		ExpiresIn        int    `json:"expires_in"`
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
 	}
 
 	if err := common.DecodeJson(resp.Body, &payload); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if payload.ErrorDescription != "" {
+			return nil, fmt.Errorf("%s", payload.ErrorDescription)
+		}
+		if payload.Error != "" {
+			return nil, fmt.Errorf("codex oauth refresh failed: %s", payload.Error)
+		}
 		return nil, fmt.Errorf("codex oauth refresh failed: status=%d", resp.StatusCode)
 	}
 
@@ -177,14 +185,22 @@ func exchangeCodexAuthorizationCode(
 	defer resp.Body.Close()
 
 	var payload struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		ExpiresIn    int    `json:"expires_in"`
+		AccessToken      string `json:"access_token"`
+		RefreshToken     string `json:"refresh_token"`
+		ExpiresIn        int    `json:"expires_in"`
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
 	}
 	if err := common.DecodeJson(resp.Body, &payload); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if payload.ErrorDescription != "" {
+			return nil, fmt.Errorf("%s", payload.ErrorDescription)
+		}
+		if payload.Error != "" {
+			return nil, fmt.Errorf("codex oauth code exchange failed: %s", payload.Error)
+		}
 		return nil, fmt.Errorf("codex oauth code exchange failed: status=%d", resp.StatusCode)
 	}
 	if strings.TrimSpace(payload.AccessToken) == "" || strings.TrimSpace(payload.RefreshToken) == "" || payload.ExpiresIn <= 0 {

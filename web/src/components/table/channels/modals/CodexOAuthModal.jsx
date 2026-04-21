@@ -46,8 +46,9 @@ const CodexOAuthModal = ({ visible, onCancel, onSuccess }) => {
         { skipErrorHandler: true },
       );
       if (!res?.data?.success) {
-        console.error('Codex OAuth start failed:', res?.data?.message);
-        throw new Error(t('启动授权失败'));
+        const msg = res?.data?.message;
+        console.error('Codex OAuth start failed:', msg);
+        throw new Error(msg || t('启动授权失败'));
       }
       const url = res?.data?.data?.authorize_url || '';
       if (!url) {
@@ -81,8 +82,9 @@ const CodexOAuthModal = ({ visible, onCancel, onSuccess }) => {
         { skipErrorHandler: true },
       );
       if (!res?.data?.success) {
-        console.error('Codex OAuth complete failed:', res?.data?.message);
-        throw new Error(t('授权失败'));
+        const msg = res?.data?.message;
+        console.error('Codex OAuth complete failed:', msg);
+        throw new Error(msg || t('授权失败'));
       }
 
       const key = res?.data?.data?.key || '';

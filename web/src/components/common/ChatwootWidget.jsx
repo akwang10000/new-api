@@ -55,6 +55,14 @@ const getLauncherTitle = (language) => {
 
 const getChatwootName = (user) => user?.username || user?.display_name || '';
 
+const openWidgetFallback = (baseUrl, websiteToken) => {
+  window.open(
+    `${baseUrl}/widget?website_token=${encodeURIComponent(websiteToken)}`,
+    '_blank',
+    'noopener,noreferrer',
+  );
+};
+
 const normalizeChatwootUser = (user) => {
   if (!user?.id || !user?.chatwoot_identifier_hash) return null;
 
@@ -76,26 +84,39 @@ export default function ChatwootWidget({ config }) {
   const { i18n } = useTranslation();
   const [userState] = useContext(UserContext);
   const [chatwootUser, setChatwootUser] = useState(null);
+  const [isUserResolved, setIsUserResolved] = useState(false);
   const language = normalizeLanguage(i18n.language);
   const locale = useMemo(() => getChatwootLocale(language), [language]);
   const launcherTitle = useMemo(() => getLauncherTitle(language), [language]);
 
   useEffect(() => {
     const loadChatwootUser = async () => {
-      if (!config?.base_url || !config?.website_token || !userState?.user) {
+      if (!config?.base_url || !config?.website_token) {
         setChatwootUser(null);
+        setIsUserResolved(true);
         return;
       }
 
+      if (!userState?.user) {
+        setChatwootUser(null);
+        setIsUserResolved(false);
+        return;
+      }
+
+      setIsUserResolved(false);
       try {
         const response = await API.get('/api/user/self', {
           disableDuplicate: true,
         });
         if (response.data?.success) {
           setChatwootUser(normalizeChatwootUser(response.data.data));
+        } else {
+          setChatwootUser(null);
         }
       } catch (_) {
         setChatwootUser(null);
+      } finally {
+        setIsUserResolved(true);
       }
     };
 
@@ -113,13 +134,13 @@ export default function ChatwootWidget({ config }) {
 
     const configKey = `${baseUrl}|${websiteToken}|${locale}|${launcherTitle}`;
     if (window.__newApiChatwootConfigKey === configKey) {
-      window.$chatwoot?.toggleBubbleVisibility?.('show');
+      window.$chatwoot?.toggleBubbleVisibility?.('hide');
       return;
     }
 
     window.__newApiChatwootConfigKey = configKey;
     window.chatwootSettings = {
-      hideMessageBubble: false,
+      hideMessageBubble: true,
       position: 'right',
       type: 'expanded_bubble',
       launcherTitle,
@@ -151,6 +172,10 @@ export default function ChatwootWidget({ config }) {
   }, [config?.base_url, config?.website_token, launcherTitle, locale]);
 
   useEffect(() => {
+    if (!isUserResolved) {
+      return;
+    }
+
     if (!chatwootUser) {
       window.$chatwoot?.reset?.();
       return;
@@ -171,7 +196,31 @@ export default function ChatwootWidget({ config }) {
     return () => {
       window.removeEventListener('chatwoot:ready', applyUser);
     };
-  }, [chatwootUser]);
+  }, [chatwootUser, isUserResolved]);
 
-  return null;
+  const baseUrl = normalizeBaseURL(config?.base_url);
+  const websiteToken = config?.website_token;
+  if (!baseUrl || !websiteToken) return null;
+
+  const openChatwoot = () => {
+    if (window.$chatwoot?.toggle) {
+      window.$chatwoot.toggle('toggle');
+      return;
+    }
+    openWidgetFallback(baseUrl, websiteToken);
+  };
+
+  return (
+    <button
+      type='button'
+      aria-label={launcherTitle}
+      onClick={openChatwoot}
+      className='fixed right-5 bottom-5 z-[2147483000] flex h-14 items-center gap-2 rounded-full border-0 bg-[#111827] px-5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.28)] transition-transform hover:scale-105 active:scale-95'
+    >
+      <span className='flex h-8 w-8 items-center justify-center rounded-full bg-[#22c55e] text-lg'>
+        ?
+      </span>
+      <span>{launcherTitle}</span>
+    </button>
+  );
 }

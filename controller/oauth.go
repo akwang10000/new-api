@@ -75,7 +75,7 @@ func GenerateOAuthCode(c *gin.Context) {
 	session := sessions.Default(c)
 	state := common.GetRandomString(12)
 	affCode := c.Query("aff")
-	if affCode != "" {
+	if !invitationLinkSharingPaused && affCode != "" {
 		session.Set("aff", affCode)
 	}
 	session.Set("oauth_state", state)
@@ -337,10 +337,12 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	user.Status = common.UserStatusEnabled
 
 	// Handle affiliate code
-	affCode := session.Get("aff")
 	inviterId := 0
-	if affCode != nil {
-		inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
+	if !invitationLinkSharingPaused {
+		affCode := session.Get("aff")
+		if affCode != nil {
+			inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
+		}
 	}
 
 	// Use transaction to ensure user creation and OAuth binding are atomic

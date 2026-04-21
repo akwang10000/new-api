@@ -129,9 +129,12 @@ const RegisterForm = () => {
   );
 
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [showEmailDomainRestriction, setShowEmailDomainRestriction] =
+    useState(false);
 
   useEffect(() => {
     setShowEmailVerification(!!status?.email_verification);
+    setShowEmailDomainRestriction(!!status?.email_domain_restriction);
     if (status?.turnstile_check) {
       setTurnstileEnabled(true);
       setTurnstileSiteKey(status.turnstile_site_key);
@@ -179,6 +182,13 @@ const RegisterForm = () => {
     }
     if (password !== password2) {
       showInfo(t('两次输入的密码不一致'));
+      return;
+    }
+    if (
+      (showEmailVerification || showEmailDomainRestriction) &&
+      inputs.email === ''
+    ) {
+      showInfo(t('请输入邮箱地址'));
       return;
     }
     if (username && password) {
@@ -559,7 +569,7 @@ const RegisterForm = () => {
                   prefix={<IconLock />}
                 />
 
-                {showEmailVerification && (
+                {(showEmailVerification || showEmailDomainRestriction) && (
                   <>
                     <Form.Input
                       field='email'
@@ -570,27 +580,31 @@ const RegisterForm = () => {
                       onChange={(value) => handleChange('email', value)}
                       prefix={<IconMail />}
                       suffix={
-                        <Button
-                          onClick={sendVerificationCode}
-                          loading={verificationCodeLoading}
-                          disabled={disableButton || verificationCodeLoading}
-                        >
-                          {disableButton
-                            ? `${t('重新发送')} (${countdown})`
-                            : t('获取验证码')}
-                        </Button>
+                        showEmailVerification ? (
+                          <Button
+                            onClick={sendVerificationCode}
+                            loading={verificationCodeLoading}
+                            disabled={disableButton || verificationCodeLoading}
+                          >
+                            {disableButton
+                              ? `${t('重新发送')} (${countdown})`
+                              : t('获取验证码')}
+                          </Button>
+                        ) : null
                       }
                     />
-                    <Form.Input
-                      field='verification_code'
-                      label={t('验证码')}
-                      placeholder={t('输入验证码')}
-                      name='verification_code'
-                      onChange={(value) =>
-                        handleChange('verification_code', value)
-                      }
-                      prefix={<IconKey />}
-                    />
+                    {showEmailVerification && (
+                      <Form.Input
+                        field='verification_code'
+                        label={t('验证码')}
+                        placeholder={t('输入验证码')}
+                        name='verification_code'
+                        onChange={(value) =>
+                          handleChange('verification_code', value)
+                        }
+                        prefix={<IconKey />}
+                      />
+                    )}
                   </>
                 )}
 

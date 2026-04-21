@@ -31,6 +31,22 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+const emailDomainWhitelistMessage = "The administrator has enabled the email domain name whitelist, and your email address is not allowed due to special symbols or it's not in the whitelist."
+
+func isEmailDomainWhitelisted(email string) bool {
+	parts := strings.Split(strings.ToLower(strings.TrimSpace(email)), "@")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	domainPart := parts[1]
+	for _, domain := range common.EmailDomainWhitelist {
+		if domainPart == strings.ToLower(strings.TrimSpace(domain)) {
+			return true
+		}
+	}
+	return false
+}
+
 func Login(c *gin.Context) {
 	if !common.PasswordLoginEnabled {
 		common.ApiErrorI18n(c, i18n.MsgUserPasswordLoginDisabled)
@@ -155,6 +171,17 @@ func Register(c *gin.Context) {
 			return
 		}
 	}
+	if common.EmailDomainRestrictionEnabled {
+		user.Email = strings.TrimSpace(user.Email)
+		if user.Email == "" {
+			common.ApiErrorMsg(c, "Email is required when email domain whitelist is enabled.")
+			return
+		}
+		if !isEmailDomainWhitelisted(user.Email) {
+			common.ApiErrorMsg(c, emailDomainWhitelistMessage)
+			return
+		}
+	}
 	exist, err := model.CheckUserExistOrDeleted(user.Username, user.Email)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgDatabaseError)
@@ -172,8 +199,11 @@ func Register(c *gin.Context) {
 	if !middleware.CheckRegisterCreateRateLimit(c) {
 		return
 	}
-	affCode := user.AffCode // this code is the inviter's code, not the user's own code
-	inviterId, _ := model.GetUserIdByAffCode(affCode)
+	inviterId := 0
+	if !invitationLinkSharingPaused {
+		affCode := user.AffCode // this code is the inviter's code, not the user's own code
+		inviterId, _ = model.GetUserIdByAffCode(affCode)
+	}
 	cleanUser := model.User{
 		Username:    user.Username,
 		Password:    user.Password,
@@ -181,7 +211,7 @@ func Register(c *gin.Context) {
 		InviterId:   inviterId,
 		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
 	}
-	if common.EmailVerificationEnabled {
+	if common.EmailVerificationEnabled || common.EmailDomainRestrictionEnabled {
 		cleanUser.Email = user.Email
 	}
 	if err := cleanUser.Insert(inviterId); err != nil {
@@ -398,6 +428,10 @@ func GetSelf(c *gin.Context) {
 	userSetting := user.GetSetting()
 
 	// 构建响应数据，包含用户信息和权限
+	affCode := user.AffCode
+	if invitationLinkSharingPaused {
+		affCode = ""
+	}
 	responseData := map[string]interface{}{
 		"id":                user.Id,
 		"username":          user.Username,
@@ -414,7 +448,7 @@ func GetSelf(c *gin.Context) {
 		"quota":             user.Quota,
 		"used_quota":        user.UsedQuota,
 		"request_count":     user.RequestCount,
-		"aff_code":          user.AffCode,
+		"aff_code":          affCode,
 		"aff_count":         user.AffCount,
 		"aff_quota":         user.AffQuota,
 		"aff_history_quota": user.AffHistoryQuota,
@@ -426,7 +460,10 @@ func GetSelf(c *gin.Context) {
 		"permissions":       permissions,                // 新增权限字段
 	}
 	if chatwootHMACToken := strings.TrimSpace(os.Getenv("CHATWOOT_HMAC_TOKEN")); chatwootHMACToken != "" {
-		chatwootIdentifier := strconv.Itoa(user.Id)
+		chatwootIdentifier := strings.TrimSpace(user.Username)
+		if chatwootIdentifier == "" {
+			chatwootIdentifier = strconv.Itoa(user.Id)
+		}
 		responseData["chatwoot_identifier"] = chatwootIdentifier
 		responseData["chatwoot_identifier_hash"] = common.GenerateHMACWithKey([]byte(chatwootHMACToken), chatwootIdentifier)
 	}
