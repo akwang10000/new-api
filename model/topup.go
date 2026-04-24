@@ -13,18 +13,37 @@ import (
 )
 
 type TopUp struct {
-	Id            int     `json:"id"`
-	UserId        int     `json:"user_id" gorm:"index"`
-	Amount        int64   `json:"amount"`
-	Money         float64 `json:"money"`
-	TradeNo       string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
-	PaymentMethod string  `json:"payment_method" gorm:"type:varchar(50)"`
-	CreateTime    int64   `json:"create_time"`
-	CompleteTime  int64   `json:"complete_time"`
-	Status        string  `json:"status"`
+	Id              int     `json:"id"`
+	UserId          int     `json:"user_id" gorm:"index"`
+	Amount          int64   `json:"amount"`
+	Money           float64 `json:"money"`
+	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
+	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
+	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	CreateTime      int64   `json:"create_time"`
+	CompleteTime    int64   `json:"complete_time"`
+	Status          string  `json:"status"`
 }
 
-var ErrPaymentMethodMismatch = errors.New("payment method mismatch")
+const (
+	PaymentMethodStripe = "stripe"
+	PaymentMethodCreem  = "creem"
+)
+
+const (
+	PaymentProviderEpay        = "epay"
+	PaymentProviderStripe      = "stripe"
+	PaymentProviderCreem       = "creem"
+	PaymentProviderBTCPay      = "btcpay"
+	PaymentProviderBEpusdt     = "bepusdt"
+	PaymentProviderNOWPayments = "nowpayments"
+)
+
+var (
+	ErrPaymentMethodMismatch = errors.New("payment method mismatch")
+	ErrTopUpNotFound         = errors.New("topup not found")
+	ErrTopUpStatusInvalid    = errors.New("topup status invalid")
+)
 
 func (topUp *TopUp) Insert() error {
 	var err error
@@ -58,7 +77,7 @@ func GetTopUpByTradeNo(tradeNo string) *TopUp {
 	return topUp
 }
 
-func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interface{}, callerIp string, callbackPaymentMethod string) (err error) {
+func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interface{}, callerIp string, callbackPaymentMethod string, expectedPaymentProvider string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -77,6 +96,9 @@ func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interf
 			return errors.New("充值订单不存在")
 		}
 
+		if expectedPaymentProvider != "" && topUp.PaymentProvider != expectedPaymentProvider {
+			return ErrPaymentMethodMismatch
+		}
 		if topUp.Status == common.TopUpStatusSuccess {
 			return nil
 		}
@@ -139,10 +161,10 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 	if customerId != "" {
 		updateFields["stripe_customer"] = customerId
 	}
-	return CompleteTopUpByMoney(referenceId, updateFields, callerIp, "stripe")
+	return CompleteTopUpByMoney(referenceId, updateFields, callerIp, "stripe", PaymentProviderStripe)
 }
 
-func CompleteTopUpByRequestedAmount(referenceId string) error {
+func CompleteTopUpByRequestedAmount(referenceId string, expectedPaymentProvider string) error {
 	if referenceId == "" {
 		return errors.New("missing payment reference id")
 	}
@@ -162,6 +184,9 @@ func CompleteTopUpByRequestedAmount(referenceId string) error {
 
 		if topUp.Status == common.TopUpStatusSuccess {
 			return nil
+		}
+		if expectedPaymentProvider != "" && topUp.PaymentProvider != expectedPaymentProvider {
+			return ErrPaymentMethodMismatch
 		}
 		if topUp.Status != common.TopUpStatusPending {
 			return errors.New("top-up order is not pending")
@@ -497,9 +522,9 @@ func validateMoneyBasedTopUpInvariant(topUp *TopUp) error {
 	return nil
 }
 
-func ExpireTopUp(tradeNo string) error {
+func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, targetStatus string) error {
 	if tradeNo == "" {
-		return errors.New("鏈彁渚涜鍗曞彿")
+		return errors.New("未提供订单号")
 	}
 
 	refCol := "`trade_no`"
@@ -512,13 +537,24 @@ func ExpireTopUp(tradeNo string) error {
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", tradeNo).First(topUp).Error; err != nil {
 			return err
 		}
+		if expectedPaymentProvider != "" && topUp.PaymentProvider != expectedPaymentProvider {
+			return ErrPaymentMethodMismatch
+		}
 		if topUp.Status != common.TopUpStatusPending {
 			return nil
 		}
-		topUp.Status = common.TopUpStatusExpired
+		topUp.Status = targetStatus
 		topUp.CompleteTime = common.GetTimestamp()
 		return tx.Save(topUp).Error
 	})
+}
+
+func ExpireTopUp(tradeNo string, expectedPaymentProvider string) error {
+	if tradeNo == "" {
+		return errors.New("鏈彁渚涜鍗曞彿")
+	}
+
+	return UpdatePendingTopUpStatus(tradeNo, expectedPaymentProvider, common.TopUpStatusExpired)
 }
 
 func RechargeCreem(referenceId string, customerEmail string, customerName string, callerIp string) (err error) {
@@ -540,7 +576,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 			return errors.New("充值订单不存在")
 		}
 
-		if !strings.EqualFold(strings.TrimSpace(topUp.PaymentMethod), "creem") {
+		if topUp.PaymentProvider != PaymentProviderCreem {
 			return ErrPaymentMethodMismatch
 		}
 

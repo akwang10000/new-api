@@ -117,13 +117,14 @@ func RequestNOWPaymentsPay(c *gin.Context) {
 	tradeNo := "ref_" + common.Sha1([]byte(reference))
 
 	topUp := &model.TopUp{
-		UserId:        userID,
-		Amount:        result.TopUpAmount,
-		Money:         result.PriceAmount,
-		TradeNo:       tradeNo,
-		PaymentMethod: getNOWPaymentsPaymentMethod(result.PayCurrency),
-		CreateTime:    time.Now().Unix(),
-		Status:        common.TopUpStatusPending,
+		UserId:          userID,
+		Amount:          result.TopUpAmount,
+		Money:           result.PriceAmount,
+		TradeNo:         tradeNo,
+		PaymentMethod:   getNOWPaymentsPaymentMethod(result.PayCurrency),
+		PaymentProvider: model.PaymentProviderNOWPayments,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	if err = topUp.Insert(); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建充值订单失败"})
@@ -142,7 +143,7 @@ func RequestNOWPaymentsPay(c *gin.Context) {
 	})
 	if err != nil {
 		log.Printf("create nowpayments invoice failed: trade_no=%s err=%v", tradeNo, err)
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderNOWPayments); expireErr != nil {
 			log.Printf("expire failed nowpayments order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起 NOWPayments 支付失败"})
@@ -150,7 +151,7 @@ func RequestNOWPaymentsPay(c *gin.Context) {
 	}
 	if strings.TrimSpace(invoice.InvoiceURL) == "" {
 		log.Printf("nowpayments invoice missing invoice_url: trade_no=%s invoice_id=%v", tradeNo, invoice.ID)
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderNOWPayments); expireErr != nil {
 			log.Printf("expire missing-link nowpayments order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "NOWPayments 支付链接不存在"})
@@ -239,14 +240,14 @@ func NOWPaymentsWebhook(c *gin.Context) {
 			log.Printf("ignore finished nowpayments webhook for non-pending order: trade_no=%s status=%s", tradeNo, topUp.Status)
 			break
 		}
-		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "nowpayments"); err != nil {
+		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "nowpayments", model.PaymentProviderNOWPayments); err != nil {
 			log.Printf("complete nowpayments topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("nowpayments topup completed: trade_no=%s payment_id=%s", tradeNo, paymentID)
 	case common.TopUpStatusExpired:
-		if err = model.ExpireTopUp(tradeNo); err != nil {
+		if err = model.ExpireTopUp(tradeNo, model.PaymentProviderNOWPayments); err != nil {
 			log.Printf("expire nowpayments topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return

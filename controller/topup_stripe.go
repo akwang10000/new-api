@@ -104,13 +104,14 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	}
 
 	topUp := &model.TopUp{
-		UserId:        id,
-		Amount:        req.Amount,
-		Money:         chargedMoney,
-		TradeNo:       referenceId,
-		PaymentMethod: PaymentMethodStripe,
-		CreateTime:    time.Now().Unix(),
-		Status:        common.TopUpStatusPending,
+		UserId:          id,
+		Amount:          req.Amount,
+		Money:           chargedMoney,
+		TradeNo:         referenceId,
+		PaymentMethod:   PaymentMethodStripe,
+		PaymentProvider: model.PaymentProviderStripe,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	err = topUp.Insert()
 	if err != nil {
@@ -235,14 +236,18 @@ func sessionAsyncPaymentFailed(event stripe.Event) {
 		log.Println("Stripe async payment failed but payment method does not match", referenceId, topUp.PaymentMethod)
 		return
 	}
+	if topUp.PaymentProvider != model.PaymentProviderStripe {
+		log.Println("Stripe async payment failed but payment provider does not match", referenceId, topUp.PaymentProvider)
+		return
+	}
 
 	if topUp.Status != common.TopUpStatusPending {
 		log.Println("Stripe async payment failed but order status is not pending", referenceId, topUp.Status)
 		return
 	}
 
-	topUp.Status = common.TopUpStatusFailed
-	if err := topUp.Update(); err != nil {
+	err := model.UpdatePendingTopUpStatus(referenceId, model.PaymentProviderStripe, common.TopUpStatusFailed)
+	if err != nil {
 		log.Println("Stripe failed to mark top-up order failed", referenceId, ", err:", err.Error())
 		return
 	}
@@ -264,7 +269,7 @@ func fulfillOrder(event stripe.Event, referenceId string, customerId string, cal
 		"currency":     strings.ToUpper(event.GetObjectValue("currency")),
 		"event_type":   string(event.Type),
 	}
-	if err := model.CompleteSubscriptionOrder(referenceId, common.GetJsonString(payload)); err == nil {
+	if err := model.CompleteSubscriptionOrder(referenceId, common.GetJsonString(payload), model.PaymentProviderStripe, PaymentMethodStripe); err == nil {
 		return
 	} else if err != nil && !errors.Is(err, model.ErrSubscriptionOrderNotFound) {
 		log.Println("complete subscription order failed:", err.Error(), referenceId)
@@ -298,7 +303,7 @@ func sessionExpired(event stripe.Event) {
 	// Subscription order expiration
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
-	if err := model.ExpireSubscriptionOrder(referenceId); err == nil {
+	if err := model.ExpireSubscriptionOrder(referenceId, model.PaymentProviderStripe); err == nil {
 		return
 	} else if err != nil && !errors.Is(err, model.ErrSubscriptionOrderNotFound) {
 		log.Println("过期订阅订单失败", referenceId, ", err:", err.Error())
@@ -315,14 +320,17 @@ func sessionExpired(event stripe.Event) {
 		log.Println("Stripe expired event payment method does not match", referenceId, topUp.PaymentMethod)
 		return
 	}
+	if topUp.PaymentProvider != model.PaymentProviderStripe {
+		log.Println("Stripe expired event payment provider does not match", referenceId, topUp.PaymentProvider)
+		return
+	}
 
 	if topUp.Status != common.TopUpStatusPending {
 		log.Println("充值订单状态错误", referenceId)
 		return
 	}
 
-	topUp.Status = common.TopUpStatusExpired
-	err := topUp.Update()
+	err := model.ExpireTopUp(referenceId, model.PaymentProviderStripe)
 	if err != nil {
 		log.Println("过期充值订单失败", referenceId, ", err:", err.Error())
 		return

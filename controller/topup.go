@@ -302,13 +302,14 @@ func RequestEpay(c *gin.Context) {
 		amount = dAmount.Div(dQuotaPerUnit).IntPart()
 	}
 	topUp := &model.TopUp{
-		UserId:        id,
-		Amount:        amount,
-		Money:         payMoney,
-		TradeNo:       tradeNo,
-		PaymentMethod: req.PaymentMethod,
-		CreateTime:    time.Now().Unix(),
-		Status:        "pending",
+		UserId:          id,
+		Amount:          amount,
+		Money:           payMoney,
+		TradeNo:         tradeNo,
+		PaymentMethod:   req.PaymentMethod,
+		PaymentProvider: model.PaymentProviderEpay,
+		CreateTime:      time.Now().Unix(),
+		Status:          "pending",
 	}
 	err = topUp.Insert()
 	if err != nil {
@@ -325,7 +326,7 @@ func RequestEpay(c *gin.Context) {
 		ReturnUrl:      returnUrl,
 	})
 	if err != nil {
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderEpay); expireErr != nil {
 			log.Printf("expire failed epay order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(200, gin.H{"message": "error", "data": err.Error()})
@@ -460,7 +461,7 @@ func EpayNotify(c *gin.Context) {
 		return
 	}
 
-	if err = model.CompleteTopUpByRequestedAmount(verifiedInfo.ServiceTradeNo); err != nil {
+	if err = model.CompleteTopUpByRequestedAmount(verifiedInfo.ServiceTradeNo, model.PaymentProviderEpay); err != nil {
 		log.Printf("epay notify complete top-up failed: trade_no=%s err=%v", verifiedInfo.ServiceTradeNo, err)
 		_, _ = c.Writer.Write([]byte("fail"))
 		return

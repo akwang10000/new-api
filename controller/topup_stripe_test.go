@@ -65,28 +65,31 @@ func TestSessionExpiredOnlyExpiresPendingStripeTopUp(t *testing.T) {
 	db := setupStripeTopUpTestDB(t)
 
 	successTopUp := &model.TopUp{
-		UserId:        1,
-		Amount:        10,
-		Money:         10,
-		TradeNo:       "stripe-success-ref",
-		PaymentMethod: PaymentMethodStripe,
-		Status:        common.TopUpStatusSuccess,
+		UserId:          1,
+		Amount:          10,
+		Money:           10,
+		TradeNo:         "stripe-success-ref",
+		PaymentMethod:   PaymentMethodStripe,
+		PaymentProvider: model.PaymentProviderStripe,
+		Status:          common.TopUpStatusSuccess,
 	}
 	nonStripeTopUp := &model.TopUp{
-		UserId:        1,
-		Amount:        10,
-		Money:         10,
-		TradeNo:       "alipay-pending-ref",
-		PaymentMethod: "alipay",
-		Status:        common.TopUpStatusPending,
+		UserId:          1,
+		Amount:          10,
+		Money:           10,
+		TradeNo:         "alipay-pending-ref",
+		PaymentMethod:   "alipay",
+		PaymentProvider: model.PaymentProviderEpay,
+		Status:          common.TopUpStatusPending,
 	}
 	stripeTopUp := &model.TopUp{
-		UserId:        1,
-		Amount:        10,
-		Money:         10,
-		TradeNo:       "stripe-pending-ref",
-		PaymentMethod: PaymentMethodStripe,
-		Status:        common.TopUpStatusPending,
+		UserId:          1,
+		Amount:          10,
+		Money:           10,
+		TradeNo:         "stripe-pending-ref",
+		PaymentMethod:   PaymentMethodStripe,
+		PaymentProvider: model.PaymentProviderStripe,
+		Status:          common.TopUpStatusPending,
 	}
 	require.NoError(t, db.Create(successTopUp).Error)
 	require.NoError(t, db.Create(nonStripeTopUp).Error)

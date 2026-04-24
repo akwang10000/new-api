@@ -104,13 +104,14 @@ func RequestBEpusdtPay(c *gin.Context) {
 	reference := fmt.Sprintf("bepusdt-ref-%d-%d-%s", userID, time.Now().UnixMilli(), randstr.String(4))
 	tradeNo := "ref_" + common.Sha1([]byte(reference))
 	topUp := &model.TopUp{
-		UserId:        userID,
-		Amount:        req.Amount,
-		Money:         priceAmountUSD,
-		TradeNo:       tradeNo,
-		PaymentMethod: getBEpusdtPaymentMethod(network.Code),
-		CreateTime:    time.Now().Unix(),
-		Status:        common.TopUpStatusPending,
+		UserId:          userID,
+		Amount:          req.Amount,
+		Money:           priceAmountUSD,
+		TradeNo:         tradeNo,
+		PaymentMethod:   getBEpusdtPaymentMethod(network.Code),
+		PaymentProvider: model.PaymentProviderBEpusdt,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	if err = topUp.Insert(); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create order"})
@@ -141,7 +142,7 @@ func RequestBEpusdtPay(c *gin.Context) {
 	resp, err := client.CreateTransaction(requestBody)
 	if err != nil {
 		log.Printf("create bepusdt transaction failed: trade_no=%s err=%v", tradeNo, err)
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderBEpusdt); expireErr != nil {
 			log.Printf("expire failed bepusdt transaction order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -152,7 +153,7 @@ func RequestBEpusdtPay(c *gin.Context) {
 	}
 	if resp.Data == nil || strings.TrimSpace(resp.Data.PaymentURL) == "" || strings.TrimSpace(resp.Data.TradeID) == "" {
 		log.Printf("bepusdt response is incomplete: trade_no=%s", tradeNo)
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderBEpusdt); expireErr != nil {
 			log.Printf("expire incomplete bepusdt order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "BEpusdt payment link is unavailable"})
@@ -160,7 +161,7 @@ func RequestBEpusdtPay(c *gin.Context) {
 	}
 	if strings.TrimSpace(resp.Data.OrderID) != "" && strings.TrimSpace(resp.Data.OrderID) != tradeNo {
 		log.Printf("bepusdt response order_id mismatch: trade_no=%s order_id=%s", tradeNo, strings.TrimSpace(resp.Data.OrderID))
-		if expireErr := model.ExpireTopUp(tradeNo); expireErr != nil {
+		if expireErr := model.ExpireTopUp(tradeNo, model.PaymentProviderBEpusdt); expireErr != nil {
 			log.Printf("expire mismatched bepusdt order failed: trade_no=%s err=%v", tradeNo, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "BEpusdt order verification failed"})
@@ -246,14 +247,14 @@ func BEpusdtWebhook(c *gin.Context) {
 			log.Printf("ignore successful bepusdt webhook for non-pending order: trade_no=%s status=%s", tradeNo, topUp.Status)
 			break
 		}
-		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "bepusdt"); err != nil {
+		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "bepusdt", model.PaymentProviderBEpusdt); err != nil {
 			log.Printf("complete bepusdt topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("bepusdt topup completed: trade_no=%s trade_id=%s", tradeNo, strings.TrimSpace(params["trade_id"]))
 	case common.TopUpStatusExpired:
-		if err = model.ExpireTopUp(tradeNo); err != nil {
+		if err = model.ExpireTopUp(tradeNo, model.PaymentProviderBEpusdt); err != nil {
 			log.Printf("expire bepusdt topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return

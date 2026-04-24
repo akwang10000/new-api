@@ -99,13 +99,14 @@ func RequestBTCPayPay(c *gin.Context) {
 	}
 
 	topUp := &model.TopUp{
-		UserId:        userID,
-		Amount:        amount,
-		Money:         payMoney,
-		TradeNo:       referenceID,
-		PaymentMethod: PaymentMethodBTCPay,
-		CreateTime:    time.Now().Unix(),
-		Status:        common.TopUpStatusPending,
+		UserId:          userID,
+		Amount:          amount,
+		Money:           payMoney,
+		TradeNo:         referenceID,
+		PaymentMethod:   PaymentMethodBTCPay,
+		PaymentProvider: model.PaymentProviderBTCPay,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	if err = topUp.Insert(); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建订单失败"})
@@ -131,7 +132,7 @@ func RequestBTCPayPay(c *gin.Context) {
 	})
 	if err != nil {
 		log.Printf("create btcpay invoice failed: trade_no=%s err=%v", referenceID, err)
-		if expireErr := model.ExpireTopUp(referenceID); expireErr != nil {
+		if expireErr := model.ExpireTopUp(referenceID, model.PaymentProviderBTCPay); expireErr != nil {
 			log.Printf("expire failed btcpay order failed: trade_no=%s err=%v", referenceID, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起 BTCPay 支付失败"})
@@ -139,7 +140,7 @@ func RequestBTCPayPay(c *gin.Context) {
 	}
 	if strings.TrimSpace(invoice.CheckoutLink) == "" {
 		log.Printf("btcpay invoice missing checkout link: trade_no=%s invoice_id=%s", referenceID, invoice.ID)
-		if expireErr := model.ExpireTopUp(referenceID); expireErr != nil {
+		if expireErr := model.ExpireTopUp(referenceID, model.PaymentProviderBTCPay); expireErr != nil {
 			log.Printf("expire missing-link btcpay order failed: trade_no=%s err=%v", referenceID, expireErr)
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "BTCPay 支付链接不存在"})
@@ -231,14 +232,14 @@ func BTCPayWebhook(c *gin.Context) {
 			log.Printf("ignore settled btcpay webhook for non-pending order: trade_no=%s status=%s", tradeNo, topUp.Status)
 			break
 		}
-		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "btcpay"); err != nil {
+		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "btcpay", model.PaymentProviderBTCPay); err != nil {
 			log.Printf("complete btcpay topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("btcpay topup completed: trade_no=%s invoice_id=%s", tradeNo, event.InvoiceID)
 	case common.TopUpStatusExpired:
-		if err = model.ExpireTopUp(tradeNo); err != nil {
+		if err = model.ExpireTopUp(tradeNo, model.PaymentProviderBTCPay); err != nil {
 			log.Printf("expire btcpay topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
