@@ -98,6 +98,8 @@ var defaultModelRatio = map[string]float64{
 	"gpt-5.4-2026-03-05":               1.25,  // $2.5 / 1M tokens
 	"openai/gpt-5.4":                   1.25,  // $2.5 / 1M tokens
 	"openai/gpt-5.4-2026-03-05":        1.25,  // $2.5 / 1M tokens
+	"gpt-5.5":                          2.5,   // $5 / 1M tokens
+	"openai/gpt-5.5":                   2.5,   // $5 / 1M tokens
 	"gpt-5.4-pro":                      15.0,  // $30 / 1M tokens
 	"gpt-5.4-pro-2026-03-05":           15.0,  // $30 / 1M tokens
 	"openai/gpt-5.4-pro":               15.0,  // $30 / 1M tokens
@@ -339,6 +341,8 @@ var defaultCompletionRatio = map[string]float64{
 	"gpt-4o-gizmo-*": 3,
 	"gpt-4-all":      2,
 	"gpt-image-1":    8,
+	"gpt-5.5":        6,
+	"openai/gpt-5.5": 6,
 }
 
 // InitRatioSettings initializes all model related settings maps
@@ -517,6 +521,9 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 		}
 		// gpt-5 匹配
 		if strings.HasPrefix(name, "gpt-5") {
+			if strings.HasPrefix(name, "gpt-5.5") {
+				return 6, true
+			}
 			if strings.HasPrefix(name, "gpt-5.4") {
 				return 6, true
 			}
