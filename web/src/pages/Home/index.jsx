@@ -32,7 +32,6 @@ import {
   showSuccess,
   stringToColor,
 } from '../../helpers';
-import { API_ENDPOINTS } from '../../constants/common.constant';
 import { StatusContext } from '../../context/Status';
 import { UserContext } from '../../context/User';
 import { useActualTheme } from '../../context/Theme';
@@ -134,7 +133,6 @@ const Home = () => {
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
-  const [endpointIndex, setEndpointIndex] = useState(0);
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -181,11 +179,10 @@ const Home = () => {
     currentLang,
   );
 
-  const endpointPath = API_ENDPOINTS[endpointIndex] || API_ENDPOINTS[0];
   const normalizedServerAddress = serverAddress.endsWith('/')
     ? serverAddress.slice(0, -1)
     : serverAddress;
-  const fullEndpoint = `${normalizedServerAddress}${endpointPath}`;
+  const fullEndpoint = `${normalizedServerAddress}/v1`;
   const consoleTarget = userState?.user ? '/console' : '/login';
   const pricingTarget =
     pricingRequireAuth && !userState?.user ? '/login' : '/pricing';
@@ -267,13 +264,6 @@ const Home = () => {
   useEffect(() => {
     displayHomePageContent().then();
   }, [homePageContentCacheKey]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setEndpointIndex((prev) => (prev + 1) % API_ENDPOINTS.length);
-    }, 2800);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     document.body.classList.toggle('home-landing-body', showLandingPage);

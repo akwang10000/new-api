@@ -1,9 +1,66 @@
 # Deployment Runbook
 
-## ARM64 Server Docker Build
+## Preferred Production Flow
 
-Production runs on an ARM64 server. When building the Docker image on the server,
-pass the target platform explicitly:
+For routine production releases, prefer local builds and artifact upload.
+Do not run full frontend or Go compilation on the server unless there is no
+practical fallback.
+
+Recommended flow:
+
+1. Build the frontend locally with `bun run build` in `web/`.
+2. Build the backend locally for Linux amd64 with the embedded `web/dist`.
+3. Upload the prebuilt binary to the server.
+4. Replace `/new-api` inside the running `app` container with `docker cp`.
+5. Restart only the `app` container and verify `/api/status` and `/`.
+
+This keeps server CPU usage low and avoids repeated `docker build` work on the
+production host.
+
+Example local build:
+
+```powershell
+Set-Location web
+bun run build
+Set-Location ..
+
+$version = (Get-Content VERSION -Raw).Trim()
+$ldflags = if ($version) {
+  "-s -w -X `"github.com/QuantumNous/new-api/common.Version=$version`""
+} else {
+  "-s -w"
+}
+
+$env:CGO_ENABLED = "0"
+$env:GOOS = "linux"
+$env:GOARCH = "amd64"
+go build -ldflags $ldflags -o .tmp/new-api-linux-amd64
+```
+
+Example upload and in-container replacement:
+
+```bash
+scp -i .ssh/opc/ssh-key-2025-04-28.key .tmp/new-api-linux-amd64 \
+  akwang10000@34.64.84.172:/tmp/new-api-linux-amd64
+
+ssh -i .ssh/opc/ssh-key-2025-04-28.key akwang10000@34.64.84.172 '
+  docker cp new-api-app-1:/new-api /tmp/new-api-backup &&
+  docker cp /tmp/new-api-linux-amd64 new-api-app-1:/new-api &&
+  docker restart new-api-app-1 &&
+  sleep 5 &&
+  curl -fsS http://127.0.0.1:3000/api/status &&
+  curl -fsS https://routeropenai.xyz/api/status
+'
+```
+
+If the new binary fails, restore the backup binary into the container before
+restarting it again.
+
+## Historical ARM64 Build Note
+
+This note is kept for an earlier ARM64 deployment incident. If a future
+deployment targets an ARM64 host and still uses on-server Docker builds, pass
+the target platform explicitly:
 
 ```bash
 docker build \
