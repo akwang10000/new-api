@@ -27,10 +27,14 @@ RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$
 
 FROM debian:bookworm-slim
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tzdata libasan8 wget \
-    && rm -rf /var/lib/apt/lists/* \
-    && update-ca-certificates
+RUN for attempt in 1 2 3; do \
+      apt-get update && \
+      apt-get install -y --no-install-recommends ca-certificates tzdata libasan8 wget && \
+      apt-get clean && \
+      update-ca-certificates && exit 0; \
+      sleep 5; \
+    done; \
+    exit 1
 
 COPY --from=builder2 /build/new-api /
 EXPOSE 3000
