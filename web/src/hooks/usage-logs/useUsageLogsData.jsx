@@ -161,7 +161,9 @@ export const useLogsData = () => {
   };
 
   // Column visibility state
-  const [visibleColumns, setVisibleColumns] = useState(getInitialVisibleColumns);
+  const [visibleColumns, setVisibleColumns] = useState(
+    getInitialVisibleColumns,
+  );
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [billingDisplayMode, setBillingDisplayMode] = useState(
     getInitialBillingDisplayMode,
@@ -364,7 +366,10 @@ export const useLogsData = () => {
       let other = getLogOther(logs[i].other);
       let expandDataLocal = [];
 
-      if (isAdminUser && (logs[i].type === 0 || logs[i].type === 2 || logs[i].type === 6)) {
+      if (
+        isAdminUser &&
+        (logs[i].type === 0 || logs[i].type === 2 || logs[i].type === 6)
+      ) {
         expandDataLocal.push({
           key: t('渠道信息'),
           value: `${logs[i].channel} - ${logs[i].channel_name || '[未知]'}`,
@@ -571,7 +576,14 @@ export const useLogsData = () => {
           expandDataLocal.push({
             key: t('失败原因'),
             value: (
-              <div style={{ maxWidth: 600, whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.6 }}>
+              <div
+                style={{
+                  maxWidth: 600,
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: 1.6,
+                }}
+              >
                 {other.reason}
               </div>
             ),
@@ -583,6 +595,31 @@ export const useLogsData = () => {
           key: t('请求路径'),
           value: other.request_path,
         });
+      }
+      if (isAdminUser && logs[i].type === 3 && other?.admin_info) {
+        const adminInfo = other.admin_info;
+        const hasUsername =
+          adminInfo.admin_username !== undefined &&
+          adminInfo.admin_username !== null &&
+          adminInfo.admin_username !== '';
+        const hasId =
+          adminInfo.admin_id !== undefined &&
+          adminInfo.admin_id !== null &&
+          adminInfo.admin_id !== '';
+        if (hasUsername || hasId) {
+          let operatorValue = '';
+          if (hasUsername && hasId) {
+            operatorValue = `${adminInfo.admin_username} (ID: ${adminInfo.admin_id})`;
+          } else if (hasUsername) {
+            operatorValue = String(adminInfo.admin_username);
+          } else {
+            operatorValue = `ID: ${adminInfo.admin_id}`;
+          }
+          expandDataLocal.push({
+            key: t('操作管理员'),
+            value: operatorValue,
+          });
+        }
       }
       if (other?.billing_source === 'subscription') {
         const planId = other?.subscription_plan_id;
@@ -650,6 +687,58 @@ export const useLogsData = () => {
           key: t('计费模式'),
           value: localCountMode,
         });
+      }
+      if (isAdminUser && logs[i].type === 1) {
+        const adminInfo = other?.admin_info;
+        if (adminInfo) {
+          if (adminInfo.payment_method) {
+            expandDataLocal.push({
+              key: t('订单支付方式'),
+              value: adminInfo.payment_method,
+            });
+          }
+          if (adminInfo.callback_payment_method) {
+            expandDataLocal.push({
+              key: t('回调支付方式'),
+              value: adminInfo.callback_payment_method,
+            });
+          }
+          if (adminInfo.caller_ip) {
+            expandDataLocal.push({
+              key: t('回调调用者IP'),
+              value: adminInfo.caller_ip,
+            });
+          }
+          if (adminInfo.server_ip) {
+            expandDataLocal.push({
+              key: t('服务器IP'),
+              value: adminInfo.server_ip,
+            });
+          }
+          if (adminInfo.node_name) {
+            expandDataLocal.push({
+              key: t('节点名称'),
+              value: adminInfo.node_name,
+            });
+          }
+          if (adminInfo.version) {
+            expandDataLocal.push({
+              key: t('系统版本'),
+              value: adminInfo.version,
+            });
+          }
+        } else {
+          expandDataLocal.push({
+            key: t('审计信息'),
+            value: (
+              <span style={{ color: 'var(--semi-color-warning)' }}>
+                {t(
+                  '该记录由旧版本实例写入，缺少审计信息，建议将实例升级至最新版本以便记录服务器IP、回调IP、支付方式与系统版本等审计字段。',
+                )}
+              </span>
+            ),
+          });
+        }
       }
       expandDatesLocal[logs[i].key] = expandDataLocal;
     }

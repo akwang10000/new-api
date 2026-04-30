@@ -2543,6 +2543,7 @@
     "计算费用中...": "Calculating fees...",
     "计费开始": "Billing Start",
     "计费模式": "Billing mode",
+    "操作管理员": "Operator admin",
     "计费类型": "Billing type",
     "计费过程": "Billing process",
     "订单号": "Order No.",
@@ -3410,6 +3411,14 @@
     "打开 {{name}}": "Open {{name}}",
     "这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。": "These entries are not built-in frontend chat features. They are configuration import links for third-party clients. Desktop clients require the corresponding app to be installed on this machine; web clients open in a new tab.",
     "打开网页客户端": "Open web client",
-    "打开本机客户端": "Open local client"
+    "打开本机客户端": "Open local client",
+    "审计信息": "Audit information",
+    "节点名称": "Node name",
+    "订单支付方式": "Order payment method",
+    "回调支付方式": "Callback payment method",
+    "回调调用者IP": "Callback caller IP",
+    "服务器IP": "Server IP",
+    "系统版本": "System version",
+    "该记录由旧版本实例写入，缺少审计信息，建议将实例升级至最新版本以便记录服务器IP、回调IP、支付方式与系统版本等审计字段。": "This record was written by an older instance and lacks audit information. Upgrade the instance to the latest version to record audit fields such as server IP, callback IP, payment method, and system version."
   }
 }

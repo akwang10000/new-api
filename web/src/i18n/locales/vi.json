@@ -2840,6 +2840,7 @@
     "计费": "Thanh toán",
     "计费开始": "Billing Start",
     "计费模式": "Billing mode",
+    "操作管理员": "Quản trị viên thao tác",
     "计费类型": "Loại thanh toán",
     "计费规则": "Quy tắc thanh toán",
     "计费过程": "Quá trình thanh toán",
@@ -3840,6 +3841,14 @@
     "打开 {{name}}": "Mở {{name}}",
     "这些入口不是前端内置聊天功能，而是第三方客户端的导入配置链接。桌面客户端需要本机已安装对应应用；网页客户端会在新标签页打开。": "Các mục này không phải là tính năng chat tích hợp trong frontend, mà là liên kết nhập cấu hình cho ứng dụng bên thứ ba. Ứng dụng desktop yêu cầu máy này đã cài ứng dụng tương ứng; ứng dụng web sẽ mở trong tab mới.",
     "打开网页客户端": "Mở ứng dụng web",
-    "打开本机客户端": "Mở ứng dụng cục bộ"
+    "打开本机客户端": "Mở ứng dụng cục bộ",
+    "审计信息": "Thông tin kiểm toán",
+    "节点名称": "Tên nút",
+    "订单支付方式": "Phương thức thanh toán đơn hàng",
+    "回调支付方式": "Phương thức thanh toán callback",
+    "回调调用者IP": "IP gọi callback",
+    "服务器IP": "IP máy chủ",
+    "系统版本": "Phiên bản hệ thống",
+    "该记录由旧版本实例写入，缺少审计信息，建议将实例升级至最新版本以便记录服务器IP、回调IP、支付方式与系统版本等审计字段。": "Bản ghi này được ghi bởi phiên bản cũ và thiếu thông tin kiểm toán. Hãy nâng cấp phiên bản mới nhất để ghi lại IP máy chủ, IP callback, phương thức thanh toán, phiên bản hệ thống và các trường kiểm toán khác."
   }
 }
