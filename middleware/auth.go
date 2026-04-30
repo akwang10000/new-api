@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -48,7 +49,24 @@ func authHelper(c *gin.Context, minRole int) {
 			c.Abort()
 			return
 		}
-		user := model.ValidateAccessToken(accessToken)
+		user, authErr := model.ValidateAccessToken(accessToken)
+		if authErr != nil {
+			if errors.Is(authErr, model.ErrDatabase) {
+				logger.LogError(c.Request.Context(), "failed to validate access token: "+authErr.Error())
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "数据库错误，请联系管理员",
+				})
+				c.Abort()
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无权进行此操作，access token 无效",
+			})
+			c.Abort()
+			return
+		}
 		if user != nil && user.Username != "" {
 			if !validUserInfo(user.Username, user.Role) {
 				c.JSON(http.StatusOK, gin.H{
@@ -210,8 +228,17 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 		parts := strings.Split(key, "-")
 		key = parts[0]
 
-		token, err := model.GetTokenByKey(key, false)
+		token, err := model.ValidateUserToken(key)
 		if err != nil {
+			if errors.Is(err, model.ErrDatabase) {
+				logger.LogError(c.Request.Context(), "failed to validate read-only token: "+err.Error())
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "数据库错误，请联系管理员",
+				})
+				c.Abort()
+				return
+			}
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "无效的令牌",
@@ -222,9 +249,10 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
+			logger.LogError(c.Request.Context(), "failed to get user cache during read-only token auth: "+err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": err.Error(),
+				"message": "数据库错误，请联系管理员",
 			})
 			c.Abort()
 			return
@@ -309,7 +337,12 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		if err != nil {
-			abortWithOpenAiMessage(c, http.StatusUnauthorized, err.Error())
+			if errors.Is(err, model.ErrDatabase) {
+				logger.LogError(c.Request.Context(), "failed to validate user token: "+err.Error())
+				abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请联系管理员")
+				return
+			}
+			abortWithOpenAiMessage(c, http.StatusUnauthorized, "无效的令牌")
 			return
 		}
 
@@ -331,7 +364,8 @@ func TokenAuth() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
-			abortWithOpenAiMessage(c, http.StatusInternalServerError, err.Error())
+			logger.LogError(c.Request.Context(), "failed to get user cache during token auth: "+err.Error())
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请联系管理员")
 			return
 		}
 		userEnabled := userCache.Status == common.UserStatusEnabled
