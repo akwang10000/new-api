@@ -17,6 +17,7 @@ func TestIsPrivateIPRejectsSpecialUseRanges(t *testing.T) {
 		"172.16.0.1",
 		"192.0.0.1",
 		"192.0.2.1",
+		"192.88.99.1",
 		"192.168.1.1",
 		"198.18.0.1",
 		"198.51.100.1",
