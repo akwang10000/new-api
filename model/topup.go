@@ -58,7 +58,7 @@ func GetTopUpByTradeNo(tradeNo string) *TopUp {
 	return topUp
 }
 
-func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interface{}) (err error) {
+func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interface{}, callerIp string, callbackPaymentMethod string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -117,12 +117,12 @@ func CompleteTopUpByMoney(referenceId string, extraUserUpdates map[string]interf
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount))
+	RecordTopupLog(topUp.UserId, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount), callerIp, topUp.PaymentMethod, callbackPaymentMethod)
 
 	return nil
 }
 
-func Recharge(referenceId string, customerId string) (err error) {
+func Recharge(referenceId string, customerId string, callerIp string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -139,7 +139,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 	if customerId != "" {
 		updateFields["stripe_customer"] = customerId
 	}
-	return CompleteTopUpByMoney(referenceId, updateFields)
+	return CompleteTopUpByMoney(referenceId, updateFields, callerIp, "stripe")
 }
 
 func CompleteTopUpByRequestedAmount(referenceId string) error {
@@ -192,7 +192,7 @@ func CompleteTopUpByRequestedAmount(referenceId string) error {
 		return errors.New("top-up failed, please retry later")
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("online top-up succeeded, quota added: %s, payment amount: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money))
+	RecordTopupLog(topUp.UserId, fmt.Sprintf("online top-up succeeded, quota added: %s, payment amount: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money), "", topUp.PaymentMethod, "")
 	return nil
 }
 
@@ -368,7 +368,7 @@ func SearchAllTopUps(keyword string, pageInfo *common.PageInfo) (topups []*TopUp
 }
 
 // ManualCompleteTopUp 管理员手动完成订单并给用户充值
-func ManualCompleteTopUp(tradeNo string) error {
+func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 	if tradeNo == "" {
 		return errors.New("未提供订单号")
 	}
@@ -381,6 +381,7 @@ func ManualCompleteTopUp(tradeNo string) error {
 	var userId int
 	var quotaToAdd int
 	var payMoney float64
+	var paymentMethod string
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		topUp := &TopUp{}
@@ -433,6 +434,7 @@ func ManualCompleteTopUp(tradeNo string) error {
 
 		userId = topUp.UserId
 		payMoney = topUp.Money
+		paymentMethod = topUp.PaymentMethod
 		return nil
 	})
 
@@ -441,7 +443,7 @@ func ManualCompleteTopUp(tradeNo string) error {
 	}
 
 	// 事务外记录日志，避免阻塞
-	RecordLog(userId, LogTypeTopup, fmt.Sprintf("管理员补单成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), payMoney))
+	RecordTopupLog(userId, fmt.Sprintf("管理员补单成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), payMoney), callerIp, paymentMethod, "admin")
 	return nil
 }
 
@@ -519,7 +521,7 @@ func ExpireTopUp(tradeNo string) error {
 	})
 }
 
-func RechargeCreem(referenceId string, customerEmail string, customerName string) (err error) {
+func RechargeCreem(referenceId string, customerEmail string, customerName string, callerIp string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -589,7 +591,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money))
+	RecordTopupLog(topUp.UserId, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money), callerIp, topUp.PaymentMethod, "creem")
 
 	return nil
 }

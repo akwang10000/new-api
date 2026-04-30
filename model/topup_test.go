@@ -10,12 +10,39 @@ import (
 
 func prepareTopUpTestDB(t *testing.T) {
 	t.Helper()
-	require.NoError(t, DB.AutoMigrate(&TopUp{}, &User{}, &Log{}))
+	require.NoError(t, DB.AutoMigrate(&TopUp{}, &User{}))
+	require.NoError(t, LOG_DB.AutoMigrate(&Log{}))
 	t.Cleanup(func() {
 		DB.Exec("DELETE FROM top_ups")
 		DB.Exec("DELETE FROM users")
-		DB.Exec("DELETE FROM logs")
+		LOG_DB.Exec("DELETE FROM logs")
 	})
+}
+
+func TestRecordTopupLogStoresAuditInfoWithNodeName(t *testing.T) {
+	prepareTopUpTestDB(t)
+	originalNodeName := common.NodeName
+	common.NodeName = "checkout-node-a"
+	t.Cleanup(func() {
+		common.NodeName = originalNodeName
+	})
+
+	RecordTopupLog(1, "充值成功", "203.0.113.10", "stripe", "stripe")
+
+	var log Log
+	require.NoError(t, LOG_DB.Where("user_id = ?", 1).First(&log).Error)
+	require.Equal(t, LogTypeTopup, log.Type)
+	require.Equal(t, "203.0.113.10", log.Ip)
+
+	other, err := common.StrToMap(log.Other)
+	require.NoError(t, err)
+	adminInfo, ok := other["admin_info"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, "203.0.113.10", adminInfo["caller_ip"])
+	require.Equal(t, "stripe", adminInfo["payment_method"])
+	require.Equal(t, "stripe", adminInfo["callback_payment_method"])
+	require.Equal(t, common.Version, adminInfo["version"])
+	require.Equal(t, "checkout-node-a", adminInfo["node_name"])
 }
 
 func TestRecharge_DoesNotCompleteNonStripeOrderEvenWhenTradeNoMatches(t *testing.T) {
@@ -38,7 +65,7 @@ func TestRecharge_DoesNotCompleteNonStripeOrderEvenWhenTradeNoMatches(t *testing
 	}
 	require.NoError(t, DB.Create(topUp).Error)
 
-	err := Recharge(topUp.TradeNo, "cus_test_123")
+	err := Recharge(topUp.TradeNo, "cus_test_123", "")
 	require.Error(t, err)
 
 	var reloadedTopUp TopUp
@@ -68,7 +95,7 @@ func TestRechargeCreem_DoesNotCompleteNonCreemOrderEvenWhenTradeNoMatches(t *tes
 	}
 	require.NoError(t, DB.Create(topUp).Error)
 
-	err := RechargeCreem(topUp.TradeNo, "paid@example.com", "paid user")
+	err := RechargeCreem(topUp.TradeNo, "paid@example.com", "paid user", "")
 	require.Error(t, err)
 
 	var reloadedTopUp TopUp
@@ -80,6 +107,40 @@ func TestRechargeCreem_DoesNotCompleteNonCreemOrderEvenWhenTradeNoMatches(t *tes
 	require.NoError(t, DB.First(&reloadedUser, user.Id).Error)
 	require.Zero(t, reloadedUser.Quota)
 	require.Empty(t, reloadedUser.Email)
+}
+
+func TestManualCompleteTopUpRecordsCallerIPAndPaymentMethod(t *testing.T) {
+	prepareTopUpTestDB(t)
+	previousQuotaPerUnit := common.QuotaPerUnit
+	common.QuotaPerUnit = 10
+	t.Cleanup(func() {
+		common.QuotaPerUnit = previousQuotaPerUnit
+	})
+
+	user := &User{Id: 5, Username: "manual-topup-user", Password: "password123"}
+	require.NoError(t, DB.Create(user).Error)
+	topUp := &TopUp{
+		UserId:        user.Id,
+		Amount:        20,
+		Money:         20,
+		TradeNo:       "manual-complete-order",
+		PaymentMethod: "alipay",
+		Status:        common.TopUpStatusPending,
+	}
+	require.NoError(t, DB.Create(topUp).Error)
+
+	require.NoError(t, ManualCompleteTopUp(topUp.TradeNo, "198.51.100.20"))
+
+	var log Log
+	require.NoError(t, LOG_DB.Where("user_id = ? AND type = ?", user.Id, LogTypeTopup).First(&log).Error)
+	require.Equal(t, "198.51.100.20", log.Ip)
+	other, err := common.StrToMap(log.Other)
+	require.NoError(t, err)
+	adminInfo, ok := other["admin_info"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, "198.51.100.20", adminInfo["caller_ip"])
+	require.Equal(t, "alipay", adminInfo["payment_method"])
+	require.Equal(t, "admin", adminInfo["callback_payment_method"])
 }
 
 func TestGetUserTopUpsLimitsRegularUsersToRecentOrders(t *testing.T) {

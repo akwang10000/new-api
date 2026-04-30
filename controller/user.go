@@ -665,7 +665,11 @@ func AdminClearUserBinding(c *gin.Context) {
 		return
 	}
 
-	model.RecordLog(user.Id, model.LogTypeManage, fmt.Sprintf("admin cleared %s binding for user %s", bindingType, user.Username))
+	adminInfo := map[string]interface{}{
+		"admin_id":       c.GetInt("id"),
+		"admin_username": c.GetString("username"),
+	}
+	model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage, fmt.Sprintf("管理员清除了用户的 %s 绑定", bindingType), adminInfo)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -543,9 +542,12 @@ func AdminDisable2FA(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	adminId := c.GetInt("id")
-	model.RecordLog(userId, model.LogTypeManage,
-		fmt.Sprintf("管理员(ID:%d)强制禁用了用户的两步验证", adminId))
+	adminInfo := map[string]interface{}{
+		"admin_id":       c.GetInt("id"),
+		"admin_username": c.GetString("username"),
+	}
+	model.RecordLogWithAdminInfo(userId, model.LogTypeManage,
+		"管理员强制禁用了用户的两步验证", adminInfo)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

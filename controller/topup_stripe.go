@@ -170,13 +170,14 @@ func StripeWebhook(c *gin.Context) {
 		return
 	}
 
+	callerIp := c.ClientIP()
 	switch event.Type {
 	case stripe.EventTypeCheckoutSessionCompleted:
-		sessionCompleted(event)
+		sessionCompleted(event, callerIp)
 	case stripe.EventTypeCheckoutSessionExpired:
 		sessionExpired(event)
 	case stripe.EventTypeCheckoutSessionAsyncPaymentSucceeded:
-		sessionAsyncPaymentSucceeded(event)
+		sessionAsyncPaymentSucceeded(event, callerIp)
 	case stripe.EventTypeCheckoutSessionAsyncPaymentFailed:
 		sessionAsyncPaymentFailed(event)
 	default:
@@ -186,7 +187,7 @@ func StripeWebhook(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func sessionCompleted(event stripe.Event) {
+func sessionCompleted(event stripe.Event, callerIp string) {
 	customerId := event.GetObjectValue("customer")
 	referenceId := event.GetObjectValue("client_reference_id")
 	status := event.GetObjectValue("status")
@@ -201,15 +202,15 @@ func sessionCompleted(event stripe.Event) {
 		return
 	}
 
-	fulfillOrder(event, referenceId, customerId)
+	fulfillOrder(event, referenceId, customerId, callerIp)
 }
 
-func sessionAsyncPaymentSucceeded(event stripe.Event) {
+func sessionAsyncPaymentSucceeded(event stripe.Event, callerIp string) {
 	customerId := event.GetObjectValue("customer")
 	referenceId := event.GetObjectValue("client_reference_id")
 	log.Println("Stripe async payment succeeded", referenceId)
 
-	fulfillOrder(event, referenceId, customerId)
+	fulfillOrder(event, referenceId, customerId, callerIp)
 }
 
 func sessionAsyncPaymentFailed(event stripe.Event) {
@@ -248,7 +249,7 @@ func sessionAsyncPaymentFailed(event stripe.Event) {
 	log.Println("Stripe top-up order marked failed", referenceId)
 }
 
-func fulfillOrder(event stripe.Event, referenceId string, customerId string) {
+func fulfillOrder(event stripe.Event, referenceId string, customerId string, callerIp string) {
 	if len(referenceId) == 0 {
 		log.Println("未提供支付单号")
 		return
@@ -270,7 +271,7 @@ func fulfillOrder(event stripe.Event, referenceId string, customerId string) {
 		return
 	}
 
-	err := model.Recharge(referenceId, customerId)
+	err := model.Recharge(referenceId, customerId, callerIp)
 	if err != nil {
 		log.Println(err.Error(), referenceId)
 		return

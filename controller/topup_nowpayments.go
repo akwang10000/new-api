@@ -239,7 +239,7 @@ func NOWPaymentsWebhook(c *gin.Context) {
 			log.Printf("ignore finished nowpayments webhook for non-pending order: trade_no=%s status=%s", tradeNo, topUp.Status)
 			break
 		}
-		if err = model.CompleteTopUpByMoney(tradeNo, nil); err != nil {
+		if err = model.CompleteTopUpByMoney(tradeNo, nil, c.ClientIP(), "nowpayments"); err != nil {
 			log.Printf("complete nowpayments topup failed: trade_no=%s err=%v", tradeNo, err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
