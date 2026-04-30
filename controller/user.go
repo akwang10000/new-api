@@ -14,7 +14,6 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/i18n"
-	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/middleware"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
@@ -629,9 +628,6 @@ func UpdateUser(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
-	if originUser.Quota != updatedUser.Quota {
-		model.RecordLog(originUser.Id, model.LogTypeManage, fmt.Sprintf("管理员将用户额度从 %s修改为 %s", logger.LogQuota(originUser.Quota), logger.LogQuota(updatedUser.Quota)))
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -898,6 +894,8 @@ func CreateUser(c *gin.Context) {
 type ManageRequest struct {
 	Id     int    `json:"id"`
 	Action string `json:"action"`
+	Value  int    `json:"value"`
+	Mode   string `json:"mode"`
 }
 
 // ManageUser Only admin user can do this
@@ -970,6 +968,46 @@ func ManageUser(c *gin.Context) {
 			return
 		}
 		user.Role = common.RoleCommonUser
+	case "add_quota":
+		if req.Mode == "add" || req.Mode == "subtract" {
+			if req.Value <= 0 {
+				common.ApiErrorI18n(c, i18n.MsgUserQuotaChangeZero)
+				return
+			}
+		}
+		var err error
+		var content string
+		switch req.Mode {
+		case "add":
+			err = model.IncreaseUserQuota(user.Id, req.Value, true)
+			content = fmt.Sprintf("管理员增加用户额度 %d", req.Value)
+		case "subtract":
+			err = model.DecreaseUserQuota(user.Id, req.Value, true)
+			content = fmt.Sprintf("管理员减少用户额度 %d", req.Value)
+		case "override":
+			err = model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("quota", req.Value).Error
+			content = fmt.Sprintf("管理员设置用户额度为 %d", req.Value)
+		default:
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		if err := model.InvalidateUserCache(user.Id); err != nil {
+			common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %s", user.Id, err.Error()))
+		}
+		adminInfo := map[string]interface{}{
+			"admin_id":       c.GetInt("id"),
+			"admin_username": c.GetString("username"),
+		}
+		model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage, content, adminInfo)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+		})
+		return
 	}
 
 	if err := user.Update(false); err != nil {
