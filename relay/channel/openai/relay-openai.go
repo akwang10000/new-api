@@ -246,7 +246,14 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		completionTokens := simpleResponse.Usage.CompletionTokens
 		if completionTokens == 0 {
 			for _, choice := range simpleResponse.Choices {
-				ctkm := service.CountTextToken(choice.Message.StringContent()+choice.Message.ReasoningContent+choice.Message.Reasoning, info.UpstreamModelName)
+				completionText := choice.Message.StringContent()
+				if choice.Message.ReasoningContent != nil {
+					completionText += *choice.Message.ReasoningContent
+				}
+				if choice.Message.Reasoning != nil {
+					completionText += *choice.Message.Reasoning
+				}
+				ctkm := service.CountTextToken(completionText, info.UpstreamModelName)
 				completionTokens += ctkm
 			}
 		}

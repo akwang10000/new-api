@@ -38,3 +38,46 @@ func TestOpenAIResponsesResponseAcceptsNullInstructions(t *testing.T) {
 		t.Fatalf("Instructions = %s, want null", response.Instructions)
 	}
 }
+
+func TestResponsesOutputArgumentsStringPreservesObjectArguments(t *testing.T) {
+	payload := []byte(`{"type":"function_call","name":"lookup","arguments":{"city":"Paris","days":2}}`)
+
+	var output ResponsesOutput
+	if err := common.Unmarshal(payload, &output); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+
+	got := output.ArgumentsString()
+	want := `{"city":"Paris","days":2}`
+	if got != want {
+		t.Fatalf("ArgumentsString() = %s, want %s", got, want)
+	}
+}
+
+func TestResponsesOutputArgumentsStringDecodesStringArguments(t *testing.T) {
+	payload := []byte(`{"type":"function_call","name":"lookup","arguments":"{\"city\":\"Paris\"}"}`)
+
+	var output ResponsesOutput
+	if err := common.Unmarshal(payload, &output); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+
+	got := output.ArgumentsString()
+	want := `{"city":"Paris"}`
+	if got != want {
+		t.Fatalf("ArgumentsString() = %s, want %s", got, want)
+	}
+}
+
+func TestResponsesOutputArgumentsStringReturnsEmptyForNullArguments(t *testing.T) {
+	payload := []byte(`{"type":"function_call","name":"lookup","arguments":null}`)
+
+	var output ResponsesOutput
+	if err := common.Unmarshal(payload, &output); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+
+	if got := output.ArgumentsString(); got != "" {
+		t.Fatalf("ArgumentsString() = %q, want empty", got)
+	}
+}
