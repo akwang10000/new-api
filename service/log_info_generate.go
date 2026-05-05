@@ -1,11 +1,13 @@
 package service
 
 import (
+	"encoding/base64"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/pkg/billingexpr"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/types"
 
@@ -213,4 +215,19 @@ func GenerateMjOtherInfo(relayInfo *relaycommon.RelayInfo, priceData types.Price
 	}
 	appendRequestPath(nil, relayInfo, other)
 	return other
+}
+
+func InjectTieredBillingInfo(other map[string]interface{}, relayInfo *relaycommon.RelayInfo, result *billingexpr.TieredResult) {
+	if relayInfo == nil || other == nil {
+		return
+	}
+	snap := relayInfo.TieredBillingSnapshot
+	if snap == nil {
+		return
+	}
+	other["billing_mode"] = "tiered_expr"
+	other["expr_b64"] = base64.StdEncoding.EncodeToString([]byte(snap.ExprString))
+	if result != nil {
+		other["matched_tier"] = result.MatchedTier
+	}
 }

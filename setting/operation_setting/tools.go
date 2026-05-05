@@ -64,6 +64,26 @@ func GetFileSearchPricePerThousand() float64 {
 	return FileSearchPrice
 }
 
+func GetToolPriceForModel(toolName, modelName string) float64 {
+	switch toolName {
+	case "web_search":
+		return WebSearchPrice
+	case "web_search_preview":
+		if strings.HasPrefix(modelName, "gpt-4o") || strings.HasPrefix(modelName, "gpt-4.1") {
+			return WebSearchPriceHigh
+		}
+		return WebSearchPrice
+	case "file_search":
+		return GetFileSearchPricePerThousand()
+	default:
+		return 0
+	}
+}
+
+func GetToolPrice(toolName string) float64 {
+	return GetToolPriceForModel(toolName, "")
+}
+
 func GetGeminiInputAudioPricePerMillionTokens(modelName string) float64 {
 	if strings.HasPrefix(modelName, "gemini-2.5-flash-preview-native-audio") {
 		return Gemini25FlashNativeAudioInputAudioPrice

@@ -44,7 +44,6 @@ var claudeModelMap = map[string]string{
 	"claude-haiku-4-5-20251001":  "claude-haiku-4-5@20251001",
 	"claude-opus-4-5-20251101":   "claude-opus-4-5@20251101",
 	"claude-opus-4-6":            "claude-opus-4-6",
-	"claude-opus-4-7":            "claude-opus-4-7",
 }
 
 const anthropicVersion = "vertex-2023-10-16"
@@ -147,17 +146,17 @@ func (a *Adaptor) getRequestUrl(info *relaycommon.RelayInfo, modelName, suffix s
 		} else {
 			keyPrefix = "?"
 		}
-		if region == "global" {
+		if a.RequestMode == RequestModeGemini {
 			return fmt.Sprintf(
 				"%s%skey=%s",
 				BuildGoogleModelURL(info.ChannelBaseUrl, DefaultAPIVersion, "", region, modelName, suffix),
 				keyPrefix,
 				info.ApiKey,
 			), nil
-		} else {
+		} else if a.RequestMode == RequestModeClaude {
 			return fmt.Sprintf(
 				"%s%skey=%s",
-				BuildGoogleModelURL(info.ChannelBaseUrl, DefaultAPIVersion, "", region, modelName, suffix),
+				BuildAnthropicModelURL(info.ChannelBaseUrl, DefaultAPIVersion, "", region, modelName, suffix),
 				keyPrefix,
 				info.ApiKey,
 			), nil
